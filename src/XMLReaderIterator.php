@@ -1,0 +1,148 @@
+<?php
+/*
+ * XMLReader Iterators
+ * Copyright (C) 2012, 2013  hakre
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @author hakre <http://hakre.wordpress.com>
+ * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ */
+
+/**
+ * Class XMLReaderIterator
+ *
+ * Iterate over all nodes of a reader
+ */
+class XMLReaderIterator implements Iterator, XMLReaderAggregate
+{
+    protected $reader;
+    private $index;
+    private $lastRead;
+    private $elementStack;
+
+    public function __construct(XMLReader $reader)
+    {
+        $this->reader = $reader;
+    }
+
+    public function getReader()
+    {
+        return $this->reader;
+    }
+
+    public function moveToNextElementByName($name = null)
+    {
+        while ($this->moveToNextElement()) {
+            if (!$name || $name === $this->reader->name) {
+                break;
+            }
+            self::next();
+        }
+        ;
+
+        return $this->valid() ? $this->current() : false;
+    }
+
+    public function moveToNextElement()
+    {
+        return $this->moveToNextByNodeType(XMLReader::ELEMENT);
+    }
+
+    /**
+     * @param int $nodeType
+     *
+     * @return bool|\XMLReaderNode
+     */
+    public function moveToNextByNodeType($nodeType = XMLReader::ELEMENT)
+    {
+        if (null === $this->valid()) {
+            self::rewind();
+        }
+
+        while ($this->valid()) {
+            if ($this->reader->nodeType === $nodeType) {
+                break;
+            }
+            self::next();
+        }
+
+        return $this->valid() ? $this->current() : false;
+    }
+
+    public function valid()
+    {
+        return $this->lastRead;
+    }
+
+    public function rewind()
+    {
+        // this iterator can not really rewind
+        if ($this->reader->nodeType === XMLREADER::NONE) {
+            self::next();
+        } elseif ($this->lastRead === null) {
+            $this->lastRead = true;
+        }
+        $this->index = 0;
+    }
+
+    public function next()
+    {
+        if ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
+            $depth                      = $this->reader->depth;
+            $this->elementStack[$depth] = new XMLReaderElement($this->reader);
+            if (count($this->elementStack) !== $depth + 1) {
+                $this->elementStack = array_slice($this->elementStack, 0, $depth + 1);
+            }
+        }
+        ;
+        $this->index++;
+    }
+
+    public function current()
+    {
+        return new XMLReaderNode($this->reader);
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
+    /**
+     * @return string
+     * @since 0.0.19
+     */
+    public function getNodePath()
+    {
+        return '/' . implode('/', $this->elementStack);
+    }
+
+    /**
+     * @return string
+     * @since 0.0.19
+     */
+    public function getNodeTree()
+    {
+        $stack  = $this->elementStack;
+        $buffer = '';
+        /* @var $element XMLReaderElement */
+        while ($element = array_pop($stack)) {
+            $buffer = $element->getXMLElementAround($buffer);
+        }
+
+        return $buffer;
+    }
+
+}

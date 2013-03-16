@@ -1,0 +1,868 @@
+<?php
+/*
+ * XMLReader Iterators
+ * Copyright (C) 2012, 2013  hakre
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @author hakre <http://hakre.wordpress.com>
+ * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @version 0.0.21
+ */
+
+/**
+ * Class XMLReaderAggregate
+ *
+ * @since 0.0.21
+ */
+interface XMLReaderAggregate
+{
+    /**
+     * @return XMLReader
+     */
+    public function getReader();
+}
+
+/**
+ * Class XMLAttributeIterator
+ *
+ * Iterator over all attributes of the current node (if any)
+ */
+class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReaderAggregate
+{
+    private $reader;
+    private $valid;
+    private $array;
+
+    public function __construct(XMLReader $reader)
+    {
+        $this->reader = $reader;
+    }
+
+    public function count()
+    {
+        return $this->reader->attributeCount;
+    }
+
+    public function current()
+    {
+        return $this->reader->value;
+    }
+
+    public function key()
+    {
+        return $this->reader->name;
+    }
+
+    public function next()
+    {
+        $this->valid = $this->reader->moveToNextAttribute();
+        if (!$this->valid) {
+            $this->reader->moveToElement();
+        }
+    }
+
+    public function rewind()
+    {
+        $this->valid = $this->reader->moveToFirstAttribute();
+    }
+
+    public function valid()
+    {
+        return $this->valid;
+    }
+
+    public function getArrayCopy()
+    {
+        if ($this->array === null) {
+            $this->array = iterator_to_array($this);
+        }
+
+        return $this->array;
+    }
+
+    public function getAttributeNames()
+    {
+        return array_keys($this->getArrayCopy());
+    }
+
+    public function offsetExists($offset)
+    {
+        $attributes = $this->getArrayCopy();
+
+        return isset($attributes[$offset]);
+    }
+
+    public function offsetGet($offset)
+    {
+        $attributes = $this->getArrayCopy();
+
+        return $attributes[$offset];
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        throw new BadMethodCallException('XMLReader attributes are read-only');
+    }
+
+    public function offsetUnset($offset)
+    {
+        throw new BadMethodCallException('XMLReader attributes are read-only');
+    }
+
+    /**
+     * @return XMLReader
+     */
+    public function getReader()
+    {
+        return $this->getReader();
+    }
+}
+
+/**
+ * Class XMLReaderIterator
+ *
+ * Iterate over all nodes of a reader
+ */
+class XMLReaderIterator implements Iterator, XMLReaderAggregate
+{
+    protected $reader;
+    private $index;
+    private $lastRead;
+    private $elementStack;
+
+    public function __construct(XMLReader $reader)
+    {
+        $this->reader = $reader;
+    }
+
+    public function getReader()
+    {
+        return $this->reader;
+    }
+
+    public function moveToNextElementByName($name = null)
+    {
+        while ($this->moveToNextElement()) {
+            if (!$name || $name === $this->reader->name) {
+                break;
+            }
+            self::next();
+        }
+        ;
+
+        return $this->valid() ? $this->current() : false;
+    }
+
+    public function moveToNextElement()
+    {
+        return $this->moveToNextByNodeType(XMLReader::ELEMENT);
+    }
+
+    /**
+     * @param int $nodeType
+     *
+     * @return bool|\XMLReaderNode
+     */
+    public function moveToNextByNodeType($nodeType = XMLReader::ELEMENT)
+    {
+        if (null === $this->valid()) {
+            self::rewind();
+        }
+
+        while ($this->valid()) {
+            if ($this->reader->nodeType === $nodeType) {
+                break;
+            }
+            self::next();
+        }
+
+        return $this->valid() ? $this->current() : false;
+    }
+
+    public function valid()
+    {
+        return $this->lastRead;
+    }
+
+    public function rewind()
+    {
+        // this iterator can not really rewind
+        if ($this->reader->nodeType === XMLREADER::NONE) {
+            self::next();
+        } elseif ($this->lastRead === null) {
+            $this->lastRead = true;
+        }
+        $this->index = 0;
+    }
+
+    public function next()
+    {
+        if ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
+            $depth                      = $this->reader->depth;
+            $this->elementStack[$depth] = new XMLReaderElement($this->reader);
+            if (count($this->elementStack) !== $depth + 1) {
+                $this->elementStack = array_slice($this->elementStack, 0, $depth + 1);
+            }
+        }
+        ;
+        $this->index++;
+    }
+
+    public function current()
+    {
+        return new XMLReaderNode($this->reader);
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
+    /**
+     * @return string
+     * @since 0.0.19
+     */
+    public function getNodePath()
+    {
+        return '/' . implode('/', $this->elementStack);
+    }
+
+    /**
+     * @return string
+     * @since 0.0.19
+     */
+    public function getNodeTree()
+    {
+        $stack  = $this->elementStack;
+        $buffer = '';
+        /* @var $element XMLReaderElement */
+        while ($element = array_pop($stack)) {
+            $buffer = $element->getXMLElementAround($buffer);
+        }
+
+        return $buffer;
+    }
+
+}
+
+/**
+ * Class XMLReaderNode
+ */
+class XMLReaderNode implements XMLReaderAggregate
+{
+    public $name;
+    private $reader;
+    private $nodeType;
+    private $nodeTypeString;
+    private $string;
+    private $attributes;
+    private $simpleXML;
+
+    public function __construct(XMLReader $reader, $string = null)
+    {
+        $this->reader         = $reader;
+        $this->nodeType       = $reader->nodeType;
+        $this->nodeTypeString = $this->getNodeTypeString();
+        $this->name           = $this->reader->name;
+        $this->string         = $string;
+    }
+
+    public function __toString()
+    {
+        // TODO CLEAN $reader->readString()
+        return $this->string ? $this->string : $this->reader->value;
+    }
+
+    /**
+     * @return SimpleXMLElement
+     */
+    public function asSimpleXML()
+    {
+        // TODO check if readOuterXml() is available (only available when PHP is compiled against libxml 20620 or later.) <http://php.net/xmlreader.readouterxml>
+        if (null === $this->simpleXML) {
+            $this->simpleXML = new SimpleXMLElement($this->readOuterXml());
+        }
+
+        return $this->simpleXML;
+    }
+
+    /**
+     * @return XMLAttributeIterator|XMLReaderNode[]
+     */
+    public function getAttributes()
+    {
+        if (null === $this->attributes) {
+            $this->attributes = new XMLAttributeIterator($this->reader);
+        }
+
+        return $this->attributes;
+    }
+
+    /**
+     * @param string $name attribute name
+     * @param string $default (optional) if the attribute with $name does not exists, the value to return
+     * @return null|string value of the attribute, if attribute with $name does not exists null (by $default)
+     */
+    public function getAttribute($name, $default = null)
+    {
+        $value = $this->reader->getAttribute($name);
+
+        return null !== $value ? $value : $default;
+    }
+
+    /**
+     * @param string $name (optional) element name, null or '*' stand for each element
+     * @param bool $descendantAxis descend into children of children and so on?
+     * @return XMLChildElementIterator|XMLReaderNode[]
+     */
+    public function getChildElements($name = null, $descendantAxis = false)
+    {
+        return new XMLChildElementIterator($this->reader, $name, $descendantAxis);
+    }
+
+    /**
+     * @return XMLChildIterator
+     */
+    public function getChildren()
+    {
+        return new XMLChildIterator($this->reader);
+    }
+
+    public function getReader()
+    {
+        return $this->reader;
+    }
+
+    /**
+     * Decorated method
+     *
+     * @return string
+     */
+    public function readOuterXml()
+    {
+        return $this->reader->readOuterXml();
+    }
+
+    /**
+     * Decorated method
+     *
+     * @return string
+     */
+    public function readString()
+    {
+        return $this->reader->readString();
+    }
+
+    /**
+     * Return Nodetype as human readable string (constant name)
+     * @param null $nodeType
+     * @return string
+     */
+    public function getNodeTypeString($nodeType = null)
+    {
+        $strings = array(
+            XMLReader::NONE                   => 'NONE',
+            XMLReader::ELEMENT                => 'ELEMENT',
+            XMLReader::ATTRIBUTE              => 'ATTRIBUTE',
+            XMLREADER::TEXT                   => 'TEXT',
+            XMLREADER::CDATA                  => 'CDATA',
+            XMLReader::ENTITY_REF             => 'ENTITIY_REF',
+            XMLReader::ENTITY                 => 'ENTITY',
+            XMLReader::PI                     => 'PI',
+            XMLReader::COMMENT                => 'COMMENT',
+            XMLReader::DOC                    => 'DOC',
+            XMLReader::DOC_TYPE               => 'DOC_TYPE',
+            XMLReader::DOC_FRAGMENT           => 'DOC_FRAGMENT',
+            XMLReader::NOTATION               => 'NOTATION',
+            XMLReader::WHITESPACE             => 'WHITESPACE',
+            XMLReader::SIGNIFICANT_WHITESPACE => 'SIGNIFICANT_WHITESPACE',
+            XMLReader::END_ELEMENT            => 'END_ELEMENT',
+            XMLReader::END_ENTITY             => 'END_ENTITY',
+            XMLReader::XML_DECLARATION        => 'XML_DECLARATION',
+        );
+
+        if (null === $nodeType) {
+            $nodeType = $this->nodeType;
+        }
+
+        return $strings[$nodeType];
+    }
+
+    public function __call($name, $args)
+    {
+        return call_user_func_array(array($this->reader, $name), $args);
+    }
+}
+
+/**
+ * Class XMLReaderElement
+ *
+ * This node is used in the elementStack
+ *
+ * @since 0.0.19
+ */
+class XMLReaderElement extends XMLReaderNode
+{
+    private $name_;
+    private $attributes_;
+
+    public function __construct(XMLReader $reader)
+    {
+        parent::__construct($reader);
+        $this->initializeFrom($reader);
+    }
+
+    public function getXMLElementOpen($selfClose = false)
+    {
+        $buffer = '<' . $this->name_;
+
+        foreach ($this->attributes_ as $name => $value) {
+            // REC-xml/#AVNormalize - preserve
+            // REC-xml/#sec-line-ends - preserve
+            $value = preg_replace_callback('~\r\n|\r(?!\n)|\t~', array($this, 'numericEntitiesSingleByte'), $value);
+
+            $buffer .= ' ' . $name . '="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false) . '"';
+        }
+
+        return $buffer . ($selfClose ? '/>' : '>');
+    }
+
+    private function numericEntitiesSingleByte($matches) {
+        $buffer = str_split($matches[0]);
+        foreach($buffer as &$char)
+            $char = sprintf('&#%d;', ord($char));
+        return implode('', $buffer);
+    }
+
+    public function getXMLElementClose()
+    {
+        return '</' . $this->name . '>';
+    }
+
+    public function getXMLElementAround($innerXML = '')
+    {
+        if (strlen($innerXML)) {
+            $buffer = $this->getXMLElementOpen() . "\n";
+            foreach (explode("\n", $innerXML) as $line) {
+                $buffer .= '  ' . $line . "\n";
+            }
+            $buffer .= $this->getXMLElementClose();
+
+            return $buffer;
+        } else {
+            return $this->getXMLElementOpen(true);
+        }
+    }
+
+    public function getAttributes()
+    {
+        return $this->attributes_;
+    }
+
+    public function getAttribute($name, $default = null)
+    {
+        return isset($this->attributes_[$name])
+            ? $this->attributes_[$name] : $default;
+    }
+
+    public function __toString()
+    {
+        return $this->name_;
+    }
+
+    private function initializeFrom(XMLReader $reader)
+    {
+        if ($reader->nodeType !== XMLReader::ELEMENT) {
+            $node = new XMLReaderNode($reader);
+            throw new RuntimeException(sprintf(
+                'Reader must be at an XMLReader::ELEMENT, is XMLReader::%s given.',
+                $node->getNodeTypeString()
+            ));
+        }
+        $this->name_       = $reader->name;
+        $this->attributes_ = parent::getAttributes()->getArrayCopy();
+    }
+}
+
+/**
+ * Class XMLChildIterator
+ *
+ * Iterate over child-nodes of the current XMLReader node
+ */
+class XMLChildIterator extends XMLReaderIterator
+{
+    private $stopDepth;
+
+    public function __construct(XMLReader $reader)
+    {
+        parent::__construct($reader);
+        $this->stopDepth = $reader->depth;
+    }
+
+    public function rewind()
+    {
+        parent::next();
+        parent::rewind();
+    }
+
+    public function valid()
+    {
+        $parent = parent::valid();
+
+        return $parent and $this->reader->depth > $this->stopDepth;
+    }
+}
+
+/**
+ * Class XMLElementIterator
+ *
+ * Iterate over XMLReader element nodes
+ */
+class XMLElementIterator extends XMLReaderIterator
+{
+    private $index;
+    private $name;
+    private $didRewind;
+
+    /**
+     * @param XMLReader $reader
+     * @param null|string $name element name, leave empty or use '*' for all elements
+     */
+    public function __construct(XMLReader $reader, $name = null)
+    {
+        parent::__construct($reader);
+        $this->name = '*' === $name ? null : $name;
+    }
+
+    /**
+     * @return XMLReaderNode
+     */
+    public function current()
+    {
+        return new XMLReaderNode($this->reader);
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
+    public function next()
+    {
+        if (parent::valid()) {
+            $this->index++;
+        }
+        parent::next();
+        parent::moveToNextElementByName($this->name);
+    }
+
+    public function rewind()
+    {
+        parent::rewind();
+        parent::moveToNextElementByName($this->name);
+        $this->didRewind = true;
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function toArray()
+    {
+        $array = array();
+        /* @var $element XMLReaderNode */
+        foreach ($this as $element) {
+            if ($this->name) {
+                $array[] = $element->readString();
+            } else {
+                $array[$element->name] = $element->readString();
+            }
+        }
+
+        return $array;
+    }
+
+    /**
+     * read string from the first element (if not yet rewinded), otherwise from the current element as
+     * long as valid. null if not valid.
+     *
+     * @return null|string
+     */
+    public function readString()
+    {
+        if (!$this->didRewind) {
+            $this->rewind();
+        }
+        if (!$this->valid()) {
+            return null;
+        }
+
+        return $this->current()->readString();
+    }
+
+    public function __toString()
+    {
+        //TODO readString() compatibility
+        $string = $this->readString();
+        return $string;
+    }
+}
+
+/**
+ * Class XMLChildElementIterator
+ *
+ * Iterate over child element nodes of the current XMLReader node
+ */
+class XMLChildElementIterator extends XMLElementIterator
+{
+    private $stopDepth;
+    private $descendTree;
+
+    /**
+     * @inheritdoc
+     * @param bool $descendantAxis traverse deep into?
+     */
+    public function __construct(XMLReader $reader, $name = null, $descendantAxis = false)
+    {
+        parent::__construct($reader, $name);
+        $this->stopDepth   = $reader->depth;
+        $this->descendTree = $descendantAxis;
+    }
+
+    /**
+     * @return XMLChildElementIterator
+     */
+    public function rewind()
+    {
+        parent::next();
+        parent::rewind();
+
+        return $this;
+    }
+
+    public function next()
+    {
+        do {
+            parent::next();
+            if ($this->descendTree || $this->reader->depth === $this->stopDepth + 1) {
+                break;
+            }
+        } while ($this->valid());
+    }
+
+    public function valid()
+    {
+        return parent::valid() && $this->reader->depth > $this->stopDepth;
+    }
+}
+
+/**
+ * Class XMLReaderFilterBase
+ *
+ * @since 0.0.21
+ */
+abstract class XMLReaderFilterBase extends FilterIterator implements XMLReaderAggregate
+{
+
+    public function __construct(XMLReaderIterator $elements) {
+        parent::__construct($elements);
+    }
+
+    /**
+     * @return XMLReader
+     */
+    public function getReader()
+    {
+        return $this->getInnerIterator()->getHeader();
+    }
+}
+
+/**
+ * Class XMLTypeFilter
+ *
+ * FilterIterator to only accept one or more specific XMLReader nodeTypes
+ *
+ */
+class XMLNodeTypeFilter extends XMLReaderFilterBase
+{
+    private $allowed;
+    private $reader;
+    private $invert;
+
+    /**
+     * @param XMLReaderIterator $iterator
+     * @param int|int[] $nodeType one or more type constants  <http://php.net/class.xmlreader>
+     *      XMLReader::NONE            XMLReader::ELEMENT         XMLReader::ATTRIBUTE       XMLReader::TEXT
+     *      XMLReader::CDATA           XMLReader::ENTITY_REF      XMLReader::ENTITY          XMLReader::PI
+     *      XMLReader::COMMENT         XMLReader::DOC             XMLReader::DOC_TYPE        XMLReader::DOC_FRAGMENT
+     *      XMLReader::NOTATION        XMLReader::WHITESPACE      XMLReader::SIGNIFICANT_WHITESPACE
+     *      XMLReader::END_ELEMENT     XMLReader::END_ENTITY      XMLReader::XML_DECLARATION
+     * @param bool $invert
+     */
+    public function __construct(XMLReaderIterator $iterator, $nodeType, $invert = false)
+    {
+        parent::__construct($iterator);
+        $this->allowed = (array) $nodeType;
+        $this->reader  = $iterator->getReader();
+        $this->invert  = $invert;
+    }
+
+    public function accept()
+    {
+        $result = in_array($this->reader->nodeType, $this->allowed);
+
+        return $this->invert ? !$result : $result;
+    }
+}
+
+/**
+ * Class XMLAttributeFilterBase
+ */
+abstract class XMLAttributeFilterBase extends XMLReaderFilterBase
+{
+    private $attr;
+
+    /**
+     * @param XMLElementIterator $elements
+     * @param string $attr name of the attribute, '*' for every attribute
+     */
+    public function __construct(XMLElementIterator $elements, $attr)
+    {
+        parent::__construct($elements);
+        $this->attr = $attr;
+    }
+
+    protected function getAttributeValues()
+    {
+        /* @var $node XMLReaderNode */
+        $node = parent::current();
+        if ('*' === $this->attr) {
+            $attrs = $node->getAttributes()->getArrayCopy();
+        } else {
+            $attrs = (array) $node->getAttribute($this->attr);
+        }
+
+        return $attrs;
+    }
+}
+
+/**
+ * Class XMLAttributeFilter
+ *
+ * FilterIterator for attribute value(s)
+ */
+class XMLAttributeFilter extends XMLAttributeFilterBase
+{
+    private $compare;
+    private $invert;
+
+    /**
+     * @param XMLElementIterator $elements
+     * @param string $attr name of the attribute, '*' for every attribute
+     * @param string|array $compare value(s) to compare against
+     * @param bool $invert
+     */
+    public function __construct(XMLElementIterator $elements, $attr, $compare, $invert = false)
+    {
+
+        parent::__construct($elements, $attr);
+
+        $this->compare = (array) $compare;
+        $this->invert  = (bool) $invert;
+    }
+
+    public function accept()
+    {
+        $result = $this->search($this->getAttributeValues(), $this->compare);
+
+        return $this->invert ? !$result : $result;
+    }
+
+    private function search($values, $compares)
+    {
+        foreach ($compares as $compare) {
+            if (in_array($compare, $values)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+/**
+ * Class XMLAttributePreg
+ *
+ * PCRE regular expression based filter for elements with a certain attribute value
+ */
+class XMLAttributePreg extends XMLAttributeFilterBase
+{
+    private $pattern;
+    private $invert;
+
+    /**
+     * @param XMLElementIterator $elements
+     * @param string $attr name of the attribute, '*' for every attribute
+     * @param string $pattern pcre based regex pattern for the attribute value
+     * @param bool $invert
+     * @throws InvalidArgumentException
+     */
+    public function __construct(XMLElementIterator $elements, $attr, $pattern, $invert = false)
+    {
+        parent::__construct($elements, $attr);
+
+        if (false === preg_match("$pattern", '')) {
+            throw new InvalidArgumentException("Invalid pcre pattern '$pattern'.");
+        }
+        $this->pattern = $pattern;
+        $this->invert  = (bool) $invert;
+    }
+
+    public function accept()
+    {
+        return (bool) preg_grep($this->pattern, $this->getAttributeValues(), $this->invert ? PREG_GREP_INVERT : 0);
+    }
+}
+
+/**
+ * Class XMLElementXpathFilter
+ *
+ * Filter an XMLReaderIterator with an Xpath expression
+ *
+ * @since 0.0.19
+ */
+class XMLElementXpathFilter extends XMLReaderFilterBase
+{
+    private $expression;
+
+    public function __construct(XMLElementIterator $iterator, $expression)
+    {
+        parent::__construct($iterator);
+        $this->expression = $expression;
+    }
+
+    public function accept()
+    {
+        $buffer = $this->getInnerIterator()->getNodeTree();
+        $result = simplexml_load_string($buffer)->xpath($this->expression);
+        $count  = count($result);
+        if ($count !== 1) {
+            return false;
+        }
+
+        return !($result[0]->children()->count());
+    }
+}
