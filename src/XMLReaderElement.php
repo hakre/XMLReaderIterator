@@ -38,46 +38,9 @@ class XMLReaderElement extends XMLReaderNode
         $this->initializeFrom($reader);
     }
 
-    public function getXMLElementOpen($selfClose = false)
-    {
-        $buffer = '<' . $this->name_;
-
-        foreach ($this->attributes_ as $name => $value) {
-            // REC-xml/#AVNormalize - preserve
-            // REC-xml/#sec-line-ends - preserve
-            $value = preg_replace_callback('~\r\n|\r(?!\n)|\t~', array($this, 'numericEntitiesSingleByte'), $value);
-
-            $buffer .= ' ' . $name . '="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false) . '"';
-        }
-
-        return $buffer . ($selfClose ? '/>' : '>');
-    }
-
-    private function numericEntitiesSingleByte($matches) {
-        $buffer = str_split($matches[0]);
-        foreach($buffer as &$char)
-            $char = sprintf('&#%d;', ord($char));
-        return implode('', $buffer);
-    }
-
-    public function getXMLElementClose()
-    {
-        return '</' . $this->name . '>';
-    }
-
     public function getXMLElementAround($innerXML = '')
     {
-        if (strlen($innerXML)) {
-            $buffer = $this->getXMLElementOpen() . "\n";
-            foreach (explode("\n", $innerXML) as $line) {
-                $buffer .= '  ' . $line . "\n";
-            }
-            $buffer .= $this->getXMLElementClose();
-
-            return $buffer;
-        } else {
-            return $this->getXMLElementOpen(true);
-        }
+        return XMLBuild::wrapTag($this->name_, $this->attributes_, $innerXML);
     }
 
     public function getAttributes()
@@ -102,7 +65,7 @@ class XMLReaderElement extends XMLReaderNode
             $node = new XMLReaderNode($reader);
             throw new RuntimeException(sprintf(
                 'Reader must be at an XMLReader::ELEMENT, is XMLReader::%s given.',
-                $node->getNodeTypeString()
+                $node->getNodeTypeName()
             ));
         }
         $this->name_       = $reader->name;

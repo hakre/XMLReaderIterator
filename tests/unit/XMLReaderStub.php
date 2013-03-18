@@ -18,18 +18,18 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.0.23
  */
 
-/**
- * Class XMLReaderAggregate
- *
- * @since 0.0.21
- */
-interface XMLReaderAggregate
+class XMLReaderStub extends XMLReader
 {
-    /**
-     * @return XMLReader
-     */
-    public function getReader();
+    private $xml;
+
+    public function __construct($xml) {
+        $this->xml = $xml;
+        $this->rewind();
+    }
+
+    public function rewind() {
+        $this->open('data://text/xml;base64,' . base64_encode($this->xml));
+    }
 }

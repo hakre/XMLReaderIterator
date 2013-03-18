@@ -32,7 +32,7 @@ class XMLElementIterator extends XMLReaderIterator
     private $didRewind;
 
     /**
-     * @param XMLReader $reader
+     * @param XMLReader   $reader
      * @param null|string $name element name, leave empty or use '*' for all elements
      */
     public function __construct(XMLReader $reader, $name = null)
@@ -41,11 +41,23 @@ class XMLElementIterator extends XMLReaderIterator
         $this->name = '*' === $name ? null : $name;
     }
 
+    public function rewind()
+    {
+        parent::rewind();
+        parent::moveToNextElementByName($this->name);
+        $this->didRewind = true;
+        $this->index     = 0;
+
+        return $this;
+    }
+
     /**
      * @return XMLReaderNode
      */
     public function current()
     {
+        $this->didRewind || self::rewind();
+
         return new XMLReaderNode($this->reader);
     }
 
@@ -63,13 +75,22 @@ class XMLElementIterator extends XMLReaderIterator
         parent::moveToNextElementByName($this->name);
     }
 
-    public function rewind()
+    /**
+     * read string from the first element (if not yet rewinded), otherwise from the current element as
+     * long as valid. null if not valid.
+     *
+     * TODO test if it can be removed due to the fact of decorating ->current() via __call() and __get()
+     *      port third example (one before the asSimeplXML / toArray() variant)
+     *      one reason it can't be removed is the rewind when starting.
+     *      -> most likely this whole function can be put into __toString()
+     *
+     * @return null|string
+     */
+    public function readString()
     {
-        parent::rewind();
-        parent::moveToNextElementByName($this->name);
-        $this->didRewind = true;
+        isset($this->index) || $this->rewind();
 
-        return $this;
+        return $this->current()->readString();
     }
 
     /**
@@ -78,12 +99,19 @@ class XMLElementIterator extends XMLReaderIterator
     public function toArray()
     {
         $array = array();
+
         /* @var $element XMLReaderNode */
         foreach ($this as $element) {
-            if ($this->name) {
-                $array[] = $element->readString();
+            if ($this->reader->hasValue) {
+                $string = $this->reader->value;
             } else {
-                $array[$element->name] = $element->readString();
+                $string = $element->readString();
+            }
+
+            if ($this->name) {
+                $array[] = $string;
+            } else {
+                $array[$element->name] = $string;
             }
         }
 
@@ -91,27 +119,26 @@ class XMLElementIterator extends XMLReaderIterator
     }
 
     /**
-     * read string from the first element (if not yet rewinded), otherwise from the current element as
-     * long as valid. null if not valid.
-     *
-     * @return null|string
+     * @return string
      */
-    public function readString()
-    {
-        if (!$this->didRewind) {
-            $this->rewind();
-        }
-        if (!$this->valid()) {
-            return null;
-        }
-
-        return $this->current()->readString();
-    }
-
     public function __toString()
     {
-        //TODO readString() compatibility
-        $string = $this->readString();
-        return $string;
+        return $this->readString();
+    }
+
+    /**
+     * decorate method calls
+     */
+    public function __call($name, $args)
+    {
+        return call_user_func_array(array($this->current(), $name), $args);
+    }
+
+    /**
+     * decorate property get
+     */
+    public function __get($name)
+    {
+        return $this->current()->$name;
     }
 }

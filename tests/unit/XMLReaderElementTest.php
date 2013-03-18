@@ -29,9 +29,7 @@ class XMLReaderElementTest extends PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $reader = new XMLReader();
-        $reader->open('data://text/plain,' .urlencode('<root><child pos="first">node value</child><child pos="first"/></root>'));
-        $this->reader = $reader;
+        $this->reader  = new XMLReaderStub('<root><child pos="first">node value</child><child pos="first"/></root>');
     }
 
     /** @test */
@@ -39,19 +37,24 @@ class XMLReaderElementTest extends PHPUnit_Framework_TestCase
         $reader = $this->reader;
         $reader->next();
         $element = new XMLReaderElement($reader);
-        $this->assertSame($element->getNodeTypeString(), $element->getNodeTypeString(XMLReader::ELEMENT));
+        $this->assertSame($element->getNodeTypeName(), $element->getNodeTypeName(XMLReader::ELEMENT));
         $this->assertSame($element->name, 'root');
     }
 
     /** @test */
     public function readerAttributeHandling() {
-        $reader = new XMLReader();
-        $reader->open('data://text/plain,' .urlencode("<root pos=\"first\" plue=\"a&#13;&#10;b&#32;  c\t&#9;d\">node value</root>"));
+        $reader = new XMLReaderStub("<root pos=\"first\" plue=\"a&#13;&#10;b&#32;  c\t&#9;d\">node value</root>");
         $reader->next();
         $this->assertSame("first", $reader->getAttribute('pos'));
         $this->assertSame("a\r\nb   c \td", $reader->getAttribute('plue'), 'entity handling');
         $element = new XMLReaderElement($reader);
-        $xml = $element->getXMLElementOpen();
-        $this->assertSame("<root pos=\"first\" plue=\"a&#13;&#10;b   c &#9;d\">", $xml, 'XML generation');
+        $xml = $element->getXMLElementAround();
+        $this->assertSame("<root pos=\"first\" plue=\"a&#13;&#10;b   c &#9;d\"/>", $xml, 'XML generation');
+    }
+
+    /** @test  */
+    public function checkNodeValue() {
+        $reader = new XMLReaderStub('<root><b></b></root>');
+        $this->markTestSkipped('node value reading pending to readString() compat checks.');
     }
 }

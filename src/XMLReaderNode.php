@@ -33,18 +33,20 @@ class XMLReaderNode implements XMLReaderAggregate
     private $attributes;
     private $simpleXML;
 
+    // TODO check which example used string and check if it can be removed (must been one of the earlier ones)
+
     public function __construct(XMLReader $reader, $string = null)
     {
         $this->reader         = $reader;
         $this->nodeType       = $reader->nodeType;
-        $this->nodeTypeString = $this->getNodeTypeString();
+        $this->nodeTypeString = $this->getNodeTypeName();
         $this->name           = $this->reader->name;
         $this->string         = $string;
     }
 
     public function __toString()
     {
-        // TODO CLEAN $reader->readString()
+        // TODO CLEAN $reader->readString()? / value?
         return $this->string ? $this->string : $this->reader->value;
     }
 
@@ -53,7 +55,6 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     public function asSimpleXML()
     {
-        // TODO check if readOuterXml() is available (only available when PHP is compiled against libxml 20620 or later.) <http://php.net/xmlreader.readouterxml>
         if (null === $this->simpleXML) {
             $this->simpleXML = new SimpleXMLElement($this->readOuterXml());
         }
@@ -74,8 +75,9 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @param string $name attribute name
+     * @param string $name    attribute name
      * @param string $default (optional) if the attribute with $name does not exists, the value to return
+     *
      * @return null|string value of the attribute, if attribute with $name does not exists null (by $default)
      */
     public function getAttribute($name, $default = null)
@@ -86,8 +88,9 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @param string $name (optional) element name, null or '*' stand for each element
-     * @param bool $descendantAxis descend into children of children and so on?
+     * @param string $name           (optional) element name, null or '*' stand for each element
+     * @param bool   $descendantAxis descend into children of children and so on?
+     *
      * @return XMLChildElementIterator|XMLReaderNode[]
      */
     public function getChildElements($name = null, $descendantAxis = false)
@@ -103,6 +106,11 @@ class XMLReaderNode implements XMLReaderAggregate
         return new XMLChildIterator($this->reader);
     }
 
+    public function getName()
+    {
+        return $this->name;
+    }
+
     public function getReader()
     {
         return $this->reader;
@@ -111,29 +119,65 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * Decorated method
      *
+     * @throws BadMethodCallException
      * @return string
      */
     public function readOuterXml()
     {
-        return $this->reader->readOuterXml();
+        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        if (method_exists($this->reader, 'readOuterXml')) {
+            return $this->reader->readOuterXml();
+        }
+
+        if (0 === $this->reader->nodeType) {
+            return '';
+        }
+
+        if (false === $node = $this->reader->expand()) {
+            throw new BadMethodCallException('Unable to expand node.');
+        }
+
+        $dom               = new DomDocument();
+        $dom->formatOutput = true;
+
+        $docNode   = $dom->importNode($node, true);
+        $childNode = $dom->appendChild($docNode);
+
+        return $dom->saveXML($childNode);
     }
 
     /**
      * Decorated method
      *
+     * @throws BadMethodCallException
      * @return string
      */
     public function readString()
     {
-        return $this->reader->readString();
+        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        if (method_exists($this->reader, 'readString')) {
+            return $this->reader->readString();
+        }
+
+        if (0 === $this->reader->nodeType) {
+            return '';
+        }
+
+        if (false === $node = $this->reader->expand()) {
+            throw new BadMethodCallException('Unable to expand node.');
+        }
+
+        return $node->textContent;
     }
 
     /**
      * Return Nodetype as human readable string (constant name)
+     *
      * @param null $nodeType
+     *
      * @return string
      */
-    public function getNodeTypeString($nodeType = null)
+    public function getNodeTypeName($nodeType = null)
     {
         $strings = array(
             XMLReader::NONE                   => 'NONE',
@@ -163,8 +207,20 @@ class XMLReaderNode implements XMLReaderAggregate
         return $strings[$nodeType];
     }
 
+    /**
+     * decorate method calls
+     */
     public function __call($name, $args)
     {
         return call_user_func_array(array($this->reader, $name), $args);
     }
+
+    /**
+     * decorate property get
+     */
+    public function __get($name)
+    {
+        return $this->reader->$name;
+    }
+
 }

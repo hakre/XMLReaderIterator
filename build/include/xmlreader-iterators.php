@@ -18,7 +18,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.0.21
+ * @version 0.0.23
  */
 
 /**
@@ -32,6 +32,148 @@ interface XMLReaderAggregate
      * @return XMLReader
      */
     public function getReader();
+}
+
+/**
+ * Module XMLBuild
+ *
+ * Some string functions helping to create XML
+ *
+ * @since 0.0.23
+ */
+abstract class XMLBuild
+{
+
+    /**
+     * indentLines()
+     *
+     * this will add a line-separator at the end of the last line because if it was
+     * empty it is not any longer and deserves one.
+     *
+     * @param string $lines
+     * @param string $indent (optional)
+     *
+     * @return string
+     */
+    public static function indentLines($lines, $indent = '  ')
+    {
+        $lineSeparator = "\n";
+        $buffer        = '';
+        $line          = strtok($lines, $lineSeparator);
+        while ($line) {
+            $buffer .= $indent . $line . $lineSeparator;
+            $line = strtok($lineSeparator);
+        }
+        strtok(null, null);
+
+        return $buffer;
+    }
+
+    /**
+     * @param string            $name
+     * @param array|Traversable $attributes  attributeName => attributeValue string pairs
+     * @param bool              $emptyTag    create an empty element tag (commonly known as short tags)
+     *
+     * @return string
+     */
+    public static function startTag($name, $attributes, $emptyTag = false)
+    {
+        $buffer = '<' . $name;
+        $buffer .= static::attributes($attributes);
+        $buffer .= $emptyTag ? '/>' : '>';
+
+        return $buffer;
+    }
+
+    /**
+     * @param array|Traversable $attributes  attributeName => attributeValue string pairs
+     *
+     * @return string
+     */
+    public static function attributes($attributes)
+    {
+        $buffer = '';
+
+        foreach ($attributes as $name => $value) {
+            $buffer .= ' ' . $name . '="' . static::attributeValue($value) . '"';
+        }
+
+        return $buffer;
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return string
+     */
+    public static function attributeValue($value)
+    {
+        $buffer = $value;
+
+        // REC-xml/#AVNormalize - preserve
+        // REC-xml/#sec-line-ends - preserve
+        $buffer = preg_replace_callback('~\r\n|\r(?!\n)|\t~', 'self::numericEntitiesSingleByte', $buffer);
+
+        return htmlspecialchars($buffer, ENT_QUOTES, 'UTF-8', false);
+    }
+
+    /**
+     * @param string            $name
+     * @param array|Traversable $attributes  attributeName => attributeValue string pairs
+     * @param string            $innerXML
+     *
+     * @return string
+     */
+    public static function wrapTag($name, $attributes, $innerXML)
+    {
+        if (!strlen($innerXML)) {
+            return XMLBuild::startTag($name, $attributes, true);
+        }
+
+        return
+            XMLBuild::startTag($name, $attributes)
+            . "\n"
+            . XMLBuild::indentLines($innerXML)
+            . "</$name>";
+    }
+
+    /**
+     * @param XMLReader $reader
+     *
+     * @return string
+     */
+    public static function readerNode(XMLReader $reader)
+    {
+        switch ($reader->nodeType) {
+            case XMLREADER::NONE:
+                return '%(0)%';
+
+            case XMLReader::ELEMENT:
+                return XMLBuild::startTag($reader->name, new XMLAttributeIterator($reader));
+
+            default:
+                $node = new XMLReaderNode($reader);
+                $nodeTypeName = $node->getNodeTypeName();
+                $nodeType = $reader->nodeType;
+                return sprintf('%%%s (%d)%%', $nodeTypeName, $nodeType);
+        }
+    }
+
+    /**
+     * @param array $matches
+     *
+     * @return string
+     * @see attributeValue()
+     */
+    private static function numericEntitiesSingleByte($matches)
+    {
+        $buffer = str_split($matches[0]);
+        foreach ($buffer as &$char) {
+            $char = sprintf('&#%d;', ord($char));
+        }
+
+        return implode('', $buffer);
+    }
 }
 
 /**
@@ -154,7 +296,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
 
     public function moveToNextElementByName($name = null)
     {
-        while ($this->moveToNextElement()) {
+        while (self::moveToNextElement()) {
             if (!$name || $name === $this->reader->name) {
                 break;
             }
@@ -162,7 +304,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         }
         ;
 
-        return $this->valid() ? $this->current() : false;
+        return self::valid() ? self::current() : false;
     }
 
     public function moveToNextElement()
@@ -175,9 +317,9 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
      *
      * @return bool|\XMLReaderNode
      */
-    public function moveToNextByNodeType($nodeType = XMLReader::ELEMENT)
+    public function moveToNextByNodeType($nodeType)
     {
-        if (null === $this->valid()) {
+        if (null === self::valid()) {
             self::rewind();
         }
 
@@ -188,12 +330,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
             self::next();
         }
 
-        return $this->valid() ? $this->current() : false;
-    }
-
-    public function valid()
-    {
-        return $this->lastRead;
+        return self::valid() ? self::current() : false;
     }
 
     public function rewind()
@@ -207,6 +344,21 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         $this->index = 0;
     }
 
+    public function valid()
+    {
+        return $this->lastRead;
+    }
+
+    public function current()
+    {
+        return new XMLReaderNode($this->reader);
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
     public function next()
     {
         if ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
@@ -218,16 +370,6 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         }
         ;
         $this->index++;
-    }
-
-    public function current()
-    {
-        return new XMLReaderNode($this->reader);
-    }
-
-    public function key()
-    {
-        return $this->index;
     }
 
     /**
@@ -270,18 +412,20 @@ class XMLReaderNode implements XMLReaderAggregate
     private $attributes;
     private $simpleXML;
 
+    // TODO check which example used string and check if it can be removed (must been one of the earlier ones)
+
     public function __construct(XMLReader $reader, $string = null)
     {
         $this->reader         = $reader;
         $this->nodeType       = $reader->nodeType;
-        $this->nodeTypeString = $this->getNodeTypeString();
+        $this->nodeTypeString = $this->getNodeTypeName();
         $this->name           = $this->reader->name;
         $this->string         = $string;
     }
 
     public function __toString()
     {
-        // TODO CLEAN $reader->readString()
+        // TODO CLEAN $reader->readString()? / value?
         return $this->string ? $this->string : $this->reader->value;
     }
 
@@ -290,7 +434,6 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     public function asSimpleXML()
     {
-        // TODO check if readOuterXml() is available (only available when PHP is compiled against libxml 20620 or later.) <http://php.net/xmlreader.readouterxml>
         if (null === $this->simpleXML) {
             $this->simpleXML = new SimpleXMLElement($this->readOuterXml());
         }
@@ -311,8 +454,9 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @param string $name attribute name
+     * @param string $name    attribute name
      * @param string $default (optional) if the attribute with $name does not exists, the value to return
+     *
      * @return null|string value of the attribute, if attribute with $name does not exists null (by $default)
      */
     public function getAttribute($name, $default = null)
@@ -323,8 +467,9 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @param string $name (optional) element name, null or '*' stand for each element
-     * @param bool $descendantAxis descend into children of children and so on?
+     * @param string $name           (optional) element name, null or '*' stand for each element
+     * @param bool   $descendantAxis descend into children of children and so on?
+     *
      * @return XMLChildElementIterator|XMLReaderNode[]
      */
     public function getChildElements($name = null, $descendantAxis = false)
@@ -340,6 +485,11 @@ class XMLReaderNode implements XMLReaderAggregate
         return new XMLChildIterator($this->reader);
     }
 
+    public function getName()
+    {
+        return $this->name;
+    }
+
     public function getReader()
     {
         return $this->reader;
@@ -348,29 +498,65 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * Decorated method
      *
+     * @throws BadMethodCallException
      * @return string
      */
     public function readOuterXml()
     {
-        return $this->reader->readOuterXml();
+        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        if (method_exists($this->reader, 'readOuterXml')) {
+            return $this->reader->readOuterXml();
+        }
+
+        if (0 === $this->reader->nodeType) {
+            return '';
+        }
+
+        if (false === $node = $this->reader->expand()) {
+            throw new BadMethodCallException('Unable to expand node.');
+        }
+
+        $dom               = new DomDocument();
+        $dom->formatOutput = true;
+
+        $docNode   = $dom->importNode($node, true);
+        $childNode = $dom->appendChild($docNode);
+
+        return $dom->saveXML($childNode);
     }
 
     /**
      * Decorated method
      *
+     * @throws BadMethodCallException
      * @return string
      */
     public function readString()
     {
-        return $this->reader->readString();
+        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        if (method_exists($this->reader, 'readString')) {
+            return $this->reader->readString();
+        }
+
+        if (0 === $this->reader->nodeType) {
+            return '';
+        }
+
+        if (false === $node = $this->reader->expand()) {
+            throw new BadMethodCallException('Unable to expand node.');
+        }
+
+        return $node->textContent;
     }
 
     /**
      * Return Nodetype as human readable string (constant name)
+     *
      * @param null $nodeType
+     *
      * @return string
      */
-    public function getNodeTypeString($nodeType = null)
+    public function getNodeTypeName($nodeType = null)
     {
         $strings = array(
             XMLReader::NONE                   => 'NONE',
@@ -400,10 +586,22 @@ class XMLReaderNode implements XMLReaderAggregate
         return $strings[$nodeType];
     }
 
+    /**
+     * decorate method calls
+     */
     public function __call($name, $args)
     {
         return call_user_func_array(array($this->reader, $name), $args);
     }
+
+    /**
+     * decorate property get
+     */
+    public function __get($name)
+    {
+        return $this->reader->$name;
+    }
+
 }
 
 /**
@@ -424,46 +622,9 @@ class XMLReaderElement extends XMLReaderNode
         $this->initializeFrom($reader);
     }
 
-    public function getXMLElementOpen($selfClose = false)
-    {
-        $buffer = '<' . $this->name_;
-
-        foreach ($this->attributes_ as $name => $value) {
-            // REC-xml/#AVNormalize - preserve
-            // REC-xml/#sec-line-ends - preserve
-            $value = preg_replace_callback('~\r\n|\r(?!\n)|\t~', array($this, 'numericEntitiesSingleByte'), $value);
-
-            $buffer .= ' ' . $name . '="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false) . '"';
-        }
-
-        return $buffer . ($selfClose ? '/>' : '>');
-    }
-
-    private function numericEntitiesSingleByte($matches) {
-        $buffer = str_split($matches[0]);
-        foreach($buffer as &$char)
-            $char = sprintf('&#%d;', ord($char));
-        return implode('', $buffer);
-    }
-
-    public function getXMLElementClose()
-    {
-        return '</' . $this->name . '>';
-    }
-
     public function getXMLElementAround($innerXML = '')
     {
-        if (strlen($innerXML)) {
-            $buffer = $this->getXMLElementOpen() . "\n";
-            foreach (explode("\n", $innerXML) as $line) {
-                $buffer .= '  ' . $line . "\n";
-            }
-            $buffer .= $this->getXMLElementClose();
-
-            return $buffer;
-        } else {
-            return $this->getXMLElementOpen(true);
-        }
+        return XMLBuild::wrapTag($this->name_, $this->attributes_, $innerXML);
     }
 
     public function getAttributes()
@@ -488,7 +649,7 @@ class XMLReaderElement extends XMLReaderNode
             $node = new XMLReaderNode($reader);
             throw new RuntimeException(sprintf(
                 'Reader must be at an XMLReader::ELEMENT, is XMLReader::%s given.',
-                $node->getNodeTypeString()
+                $node->getNodeTypeName()
             ));
         }
         $this->name_       = $reader->name;
@@ -537,7 +698,7 @@ class XMLElementIterator extends XMLReaderIterator
     private $didRewind;
 
     /**
-     * @param XMLReader $reader
+     * @param XMLReader   $reader
      * @param null|string $name element name, leave empty or use '*' for all elements
      */
     public function __construct(XMLReader $reader, $name = null)
@@ -546,11 +707,23 @@ class XMLElementIterator extends XMLReaderIterator
         $this->name = '*' === $name ? null : $name;
     }
 
+    public function rewind()
+    {
+        parent::rewind();
+        parent::moveToNextElementByName($this->name);
+        $this->didRewind = true;
+        $this->index     = 0;
+
+        return $this;
+    }
+
     /**
      * @return XMLReaderNode
      */
     public function current()
     {
+        $this->didRewind || self::rewind();
+
         return new XMLReaderNode($this->reader);
     }
 
@@ -568,13 +741,22 @@ class XMLElementIterator extends XMLReaderIterator
         parent::moveToNextElementByName($this->name);
     }
 
-    public function rewind()
+    /**
+     * read string from the first element (if not yet rewinded), otherwise from the current element as
+     * long as valid. null if not valid.
+     *
+     * TODO test if it can be removed due to the fact of decorating ->current() via __call() and __get()
+     *      port third example (one before the asSimeplXML / toArray() variant)
+     *      one reason it can't be removed is the rewind when starting.
+     *      -> most likely this whole function can be put into __toString()
+     *
+     * @return null|string
+     */
+    public function readString()
     {
-        parent::rewind();
-        parent::moveToNextElementByName($this->name);
-        $this->didRewind = true;
+        isset($this->index) || $this->rewind();
 
-        return $this;
+        return $this->current()->readString();
     }
 
     /**
@@ -583,12 +765,19 @@ class XMLElementIterator extends XMLReaderIterator
     public function toArray()
     {
         $array = array();
+
         /* @var $element XMLReaderNode */
         foreach ($this as $element) {
-            if ($this->name) {
-                $array[] = $element->readString();
+            if ($this->reader->hasValue) {
+                $string = $this->reader->value;
             } else {
-                $array[$element->name] = $element->readString();
+                $string = $element->readString();
+            }
+
+            if ($this->name) {
+                $array[] = $string;
+            } else {
+                $array[$element->name] = $string;
             }
         }
 
@@ -596,28 +785,27 @@ class XMLElementIterator extends XMLReaderIterator
     }
 
     /**
-     * read string from the first element (if not yet rewinded), otherwise from the current element as
-     * long as valid. null if not valid.
-     *
-     * @return null|string
+     * @return string
      */
-    public function readString()
-    {
-        if (!$this->didRewind) {
-            $this->rewind();
-        }
-        if (!$this->valid()) {
-            return null;
-        }
-
-        return $this->current()->readString();
-    }
-
     public function __toString()
     {
-        //TODO readString() compatibility
-        $string = $this->readString();
-        return $string;
+        return $this->readString();
+    }
+
+    /**
+     * decorate method calls
+     */
+    public function __call($name, $args)
+    {
+        return call_user_func_array(array($this->current(), $name), $args);
+    }
+
+    /**
+     * decorate property get
+     */
+    public function __get($name)
+    {
+        return $this->current()->$name;
     }
 }
 

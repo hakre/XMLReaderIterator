@@ -8,6 +8,7 @@
 $xmlReaderIterator_libPath = __DIR__ . '/src';
 
 require $xmlReaderIterator_libPath . '/XMLReaderAggregate.php';
+require $xmlReaderIterator_libPath . '/XMLBuild.php';
 require $xmlReaderIterator_libPath . '/XMLAttributeIterator.php';
 require $xmlReaderIterator_libPath . '/XMLReaderIterator.php';
 require $xmlReaderIterator_libPath . '/XMLReaderNode.php';

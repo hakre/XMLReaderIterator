@@ -44,7 +44,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
 
     public function moveToNextElementByName($name = null)
     {
-        while ($this->moveToNextElement()) {
+        while (self::moveToNextElement()) {
             if (!$name || $name === $this->reader->name) {
                 break;
             }
@@ -52,7 +52,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         }
         ;
 
-        return $this->valid() ? $this->current() : false;
+        return self::valid() ? self::current() : false;
     }
 
     public function moveToNextElement()
@@ -65,9 +65,9 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
      *
      * @return bool|\XMLReaderNode
      */
-    public function moveToNextByNodeType($nodeType = XMLReader::ELEMENT)
+    public function moveToNextByNodeType($nodeType)
     {
-        if (null === $this->valid()) {
+        if (null === self::valid()) {
             self::rewind();
         }
 
@@ -78,12 +78,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
             self::next();
         }
 
-        return $this->valid() ? $this->current() : false;
-    }
-
-    public function valid()
-    {
-        return $this->lastRead;
+        return self::valid() ? self::current() : false;
     }
 
     public function rewind()
@@ -97,6 +92,21 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         $this->index = 0;
     }
 
+    public function valid()
+    {
+        return $this->lastRead;
+    }
+
+    public function current()
+    {
+        return new XMLReaderNode($this->reader);
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
     public function next()
     {
         if ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
@@ -108,16 +118,6 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         }
         ;
         $this->index++;
-    }
-
-    public function current()
-    {
-        return new XMLReaderNode($this->reader);
-    }
-
-    public function key()
-    {
-        return $this->index;
     }
 
     /**

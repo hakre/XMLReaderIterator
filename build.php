@@ -12,20 +12,74 @@ $concatenateDir = $buildDir . '/include';
 $concatenateFile = $concatenateDir . '/xmlreader-iterators.php';
 $autoLoadFile = __DIR__ . '/autoload.php';
 
+
 ### test if autoload.php contains all classes ###
 build_test_autoload_file($errors, $autoLoadFile);
+
+### test if tests run clean ###
+build_test_tests($errors);
+
+if ($errors) {
+    printf("ERROR: Build (Tests only) had %d errors, quitting.\n", $errors);
+    return;
+}
 
 ### clean ###
 build_make_clean($errors, $buildDir, $concatenateDir);
 
 ### create concatenateFile ###
 build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile);
-copy_to_dir('README.md', $concatenateDir);
+copy_file_to_dir('README.md', $concatenateDir);
+
+### conditional build target into gist ###
+$gistDir = __DIR__ . '/../' . basename(__dir__) . '-Gist-5147685';
+if (is_dir($gistDir)) {
+    copy_dir_to_dir($concatenateDir, $gistDir);
+}
 
 if ($errors) {
     printf("ERROR: Build had %d errors.\n");
 }
 
+
+/**
+ * @param $errors
+ */
+function build_test_tests(&$errors)
+{
+    echo "INFO: Running phpunit testuite before building:\n";
+
+    $phpunit = 'phpunit';
+
+    $command = "$phpunit --version";
+
+    $lastline = exec($command, $output, $exitCode);
+    list($versionLine) = $output;
+    if (!preg_match('~^PHPUnit \d\.\d\.\d+ by Sebastian Bergmann\.$~', $versionLine)) {
+        echo "ERROR: Unable to invoke PHPUnit.\n";
+        $errors++;
+        return;
+    }
+
+    $command = "$phpunit --stop-on-failure tests";
+
+    $result = system($command, $exitCode);
+
+    if ($result === false) {
+        echo "ERROR: Unable to invoke PHPUnit tests.\n";
+        $errors++;
+        return;
+    }
+
+    if ($exitCode !== 0) {
+        echo "ERROR: PHPUnit did return exit code $exitCode which is not 0.\n";
+        $errors++;
+        return;
+    }
+
+    echo "INFO: phpunit testuite did pass.\n";
+    return;
+}
 
 /**
  * @param $errors
@@ -175,16 +229,34 @@ function cwdname($path)
     return strtr($result, '\\', '/');
 }
 
+/**
+ * copy files from one directory into another.
+ *
+ * @param string $sourceDir
+ * @param string $targetDir
+ */
+function copy_dir_to_dir($sourceDir, $targetDir)
+{
+    foreach (new DirectoryIterator($sourceDir) as $file) {
+        if (!$file->isFile()) {
+            continue;
+        }
+
+        copy_file_to_dir($file->getPathname(), $targetDir);
+    }
+}
 
 /**
+ * copy file into directory
+ *
  * @param string $file
- * @param string $dir
+ * @param string $targetDir
  *
  * @return bool
  */
-function copy_to_dir($file, $dir)
+function copy_file_to_dir($file, $targetDir)
 {
-    $target = rtrim($dir, '/\\') . '/' . basename($file);
+    $target = rtrim($targetDir, '/\\') . '/' . basename($file);
     if (realpath($file) === realpath($target)) {
         echo "INFO: source and target in copy_to_dir() are the same.\n";
 
