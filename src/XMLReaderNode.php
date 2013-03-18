@@ -1,7 +1,8 @@
 <?php
 /*
- * XMLReader Iterators
- * Copyright (C) 2012, 2013  hakre
+ * This file is part of the XMLReaderIterator package.
+ *
+ * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as

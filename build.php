@@ -1,7 +1,11 @@
 #!/usr/bin/env php
 <?php
 /**
- * XMLIterator build script
+ * This file is part of the XMLReaderIterator package.
+ *
+ * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ *
+ * build script
  */
 
 $errors = 0;
@@ -21,6 +25,7 @@ build_test_tests($errors);
 
 if ($errors) {
     printf("ERROR: Build (Tests only) had %d errors, quitting.\n", $errors);
+
     return;
 }
 
@@ -58,6 +63,7 @@ function build_test_tests(&$errors)
     if (!preg_match('~^PHPUnit \d\.\d\.\d+ by Sebastian Bergmann\.$~', $versionLine)) {
         echo "ERROR: Unable to invoke PHPUnit.\n";
         $errors++;
+
         return;
     }
 
@@ -68,16 +74,19 @@ function build_test_tests(&$errors)
     if ($result === false) {
         echo "ERROR: Unable to invoke PHPUnit tests.\n";
         $errors++;
+
         return;
     }
 
     if ($exitCode !== 0) {
         echo "ERROR: PHPUnit did return exit code $exitCode which is not 0.\n";
         $errors++;
+
         return;
     }
 
     echo "INFO: phpunit testuite did pass.\n";
+
     return;
 }
 
@@ -116,7 +125,7 @@ function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile
 
         return;
     } else {
-        $concatenateFileHandle = fopen($concatenateFile, 'a');
+        $concatenateFileHandle = fopen($concatenateFile, 'c+');
         if (!$concatenateFileHandle) {
             echo "ERROR: concatenateFile '$concatenateFile' can not be created.\n";
             $errors++;
@@ -160,9 +169,42 @@ function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile
         fclose($handle);
         $count++;
     }
+    printf("INFO: concatenated %d files into %s.\n", $count, cwdname($concatenateFile));
+
+    ### change the part of line ###
+    do {
+
+        $buffer  = stream_get_contents($concatenateFileHandle, 512, 0);
+        $search  = ' * This file is part of the XMLReaderIterator package.';
+        $replace = ' * XMLReaderIterator <http://git.io/xmlreaderiterator>';
+
+        $length = strlen($search);
+
+        if ($length !== strlen($replace)) {
+            echo "ERROR: Search and replace must have the same length.\n";
+            $errors++;
+            break;
+        }
+
+        $pos = strpos($buffer, $search);
+        if (!$pos) {
+            echo "ERROR: Unable to find search string in first 512 bytes.\n";
+            $errors++;
+            break;
+        }
+
+        $buffer = substr_replace($buffer, $replace, $pos, $length);
+
+        $bytesWritten = stream_put_contents($concatenateFileHandle, $buffer, 0, $pos + $length);
+        if (false === $bytesWritten) {
+            echo "ERROR: Failed to put first 512 bytes into stream.\n";
+            $errors++;
+            break;
+        }
+
+    } while (false);
 
     fclose($concatenateFileHandle);
-    printf("INFO: concatenated %d files into %s.\n", $count, cwdname($concatenateFile));
 }
 
 /**
@@ -329,4 +371,38 @@ function deltree($path)
             break;
         }
     }
+}
+
+/**
+ * @param resource $handle    destination stream
+ * @param string   $data      data to write
+ * @param int      $offset    offset in destination stream if specified
+ * @param int      $maxlength specify bytes to write if specified
+ *
+ * @return bool|int
+ * @internal param string $string string to write
+ */
+function stream_put_contents($handle, $data, $offset = null, $maxlength = null)
+{
+    if (!is_resource($handle) or 'stream' !== get_resource_type($handle)) {
+        trigger_error('Destination is not a stream resource type.');
+
+        return false;
+    }
+
+
+    $length = strlen($data);
+    if (null !== $maxlength) {
+        $length = max(0, (int) $maxlength);
+    }
+
+    if (null !== $offset) {
+        if (-1 === fseek($handle, $offset)) {
+            trigger_error('Unable to seek.');
+
+            return false;
+        }
+    }
+
+    return fwrite($handle, $data, $length);
 }

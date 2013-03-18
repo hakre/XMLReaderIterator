@@ -1,8 +1,10 @@
 <?php
 /*
- * Example: Filter XML elements by xpath expression
+ * This file is part of the XMLReaderIterator package.
  *
- * This file is part of XMLReaderIterator.
+ * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ *
+ * Example: Filter XML elements by xpath expression
  */
 
 require('xmlreader-iterators.php'); // require XMLReaderIterator library

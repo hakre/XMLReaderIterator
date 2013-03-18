@@ -1,8 +1,10 @@
 <?php
 /*
- * autoloader / bootstrap (the file-name as common as it is might be little misleading here so far)
+ * This file is part of the XMLReaderIterator package.
  *
- * @since 0.0.21
+ * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ *
+ * auto-load / bootstrap (the file-name as common as it is might be little misleading here so far)
  */
 
 $xmlReaderIterator_libPath = __DIR__ . '/src';

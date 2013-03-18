@@ -1,10 +1,10 @@
 <?php
 /*
- * XMLReader Iterators
- * Copyright (C) 2012, 2013  hakre
+ * This file is part of the XMLReaderIterator package.
  *
- * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ *
+ * bootstrap for tests
  */
 
 require_once(__DIR__ . '/../autoload.php');

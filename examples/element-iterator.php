@@ -1,8 +1,10 @@
 <?php
 /*
- * Example: Iterate over all elements
+ * This file is part of the XMLReaderIterator package.
  *
- * This file is part of XMLReaderIterator.
+ * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ *
+ * Example: Iterate over all elements
  */
 
 require('xmlreader-iterators.php'); // require XMLReaderIterator library
