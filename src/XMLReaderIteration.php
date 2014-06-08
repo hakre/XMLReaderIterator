@@ -19,18 +19,66 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.0
  */
 
 /**
- * Class XMLReaderAggregate
+ * Class XMLReaderIteration
  *
- * @since 0.0.21
+ * Very basic XMLReader iteration
  */
-interface XMLReaderAggregate
+class XMLReaderIteration implements Iterator
 {
+    /**
+     * @var XMLReader
+     */
+    private $reader;
+
+    /**
+     * @var boolean
+     */
+    private $valid;
+
+    /**
+     * @var int
+     */
+    private $index;
+
+    function __construct(XMLReader $reader)
+    {
+        $this->reader = $reader;
+    }
+
     /**
      * @return XMLReader
      */
-    public function getReader();
+    public function current()
+    {
+        return $this->reader;
+    }
+
+    public function next()
+    {
+        $this->index++;
+        $this->valid = $this->reader->read();
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
+    public function valid()
+    {
+        return $this->valid;
+    }
+
+    public function rewind()
+    {
+        if ($this->reader->nodeType !== XMLReader::NONE) {
+            throw new BadMethodCallException('Reader can not be rewound');
+        }
+
+        $this->index = 0;
+        $this->valid = $this->reader->read();
+    }
 }

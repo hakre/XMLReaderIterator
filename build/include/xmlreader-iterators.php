@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.0.25
+ * @version 0.1.0
  */
 
 /**
@@ -401,6 +401,250 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
 }
 
 /**
+ * Class XMLReaderIteration
+ *
+ * Very basic XMLReader iteration
+ */
+class XMLReaderIteration implements Iterator
+{
+    /**
+     * @var XMLReader
+     */
+    private $reader;
+
+    /**
+     * @var boolean
+     */
+    private $valid;
+
+    /**
+     * @var int
+     */
+    private $index;
+
+    function __construct(XMLReader $reader)
+    {
+        $this->reader = $reader;
+    }
+
+    /**
+     * @return XMLReader
+     */
+    public function current()
+    {
+        return $this->reader;
+    }
+
+    public function next()
+    {
+        $this->index++;
+        $this->valid = $this->reader->read();
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
+    public function valid()
+    {
+        return $this->valid;
+    }
+
+    public function rewind()
+    {
+        if ($this->reader->nodeType !== XMLReader::NONE) {
+            throw new BadMethodCallException('Reader can not be rewound');
+        }
+
+        $this->index = 0;
+        $this->valid = $this->reader->read();
+    }
+}
+
+
+/**
+ * Class DOMReadingIteration
+ */
+class DOMReadingIteration extends IteratorIterator
+{
+    private $rootNode;
+
+    private $reader;
+
+    /**
+     * @var array|DOMNode[]
+     */
+    private $stack;
+
+    /**
+     * @var int
+     */
+    private $depth;
+
+    /**
+     * @var int
+     */
+    private $lastDepth;
+
+    /**
+     * @var DOMNode
+     */
+    private $node;
+
+    /**
+     * @var DOMNode
+     */
+    private $lastNode;
+
+    public function __construct(DOMNode $node, XMLReader $reader)
+    {
+        $this->rootNode = $node;
+        $this->reader   = $reader;
+        parent::__construct(new XMLReaderIteration($reader));
+    }
+
+    /**
+     * The element by marked by type XMLReader::END_ELEMENT
+     * is empty (has no children) but not self-closing.
+     *
+     * @return bool
+     */
+    public function isEndElementOfEmptyElement()
+    {
+        return
+            $this->reader->nodeType === XMLReader::END_ELEMENT
+            && $this->lastDepth === $this->reader->depth
+            && $this->lastNode instanceof DOMElement
+            && !$this->reader->isEmptyElement;
+    }
+
+    public function rewind()
+    {
+        $this->stack = array($this->rootNode);
+        parent::rewind();
+        $this->build();
+    }
+
+    private function build()
+    {
+        if (!$this->valid()) {
+            $this->depth      = NULL;
+            $this->lastDetpth = NULL;
+            $this->node       = NULL;
+            $this->lastNode   = NULL;
+            $this->stack      = NULL;
+            return;
+        }
+
+        $depth = $this->reader->depth;
+
+        switch ($this->reader->nodeType) {
+            case XMLReader::ELEMENT:
+                $parent = $this->stack[$depth];
+                $prefix = $this->reader->prefix;
+                /* @var $node DOMElement */
+                if ($prefix) {
+                    $uri = $parent->lookupNamespaceURI($prefix) ?: $this->nsUriSelfLookup($prefix);
+                    if ($uri === NULL) {
+                        trigger_error(sprintf('Unable to lookup NS URI for element prefix "%s"', $prefix));
+                    }
+                    /* @var $doc DOMDocument */
+                    $doc  = ($parent->ownerDocument?:$parent);
+                    $node = $doc->createElementNS($uri, $this->reader->name);
+                    $node = $parent->appendChild($node);
+                } else {
+                    $node = $parent->appendChild(new DOMElement($this->reader->name));
+                }
+                $this->stack[$depth + 1] = $node;
+                if ($this->reader->moveToFirstAttribute()) {
+                    $nsUris = array();
+                    do {
+                        if ($this->reader->prefix === 'xmlns') {
+                            $nsUris[$this->reader->localName] = $this->reader->value;
+                        }
+                    } while ($this->reader->moveToNextAttribute());
+
+                    $this->reader->moveToFirstAttribute();
+                    do {
+                        $prefix = $this->reader->prefix;
+                        if ($prefix === 'xmlns') {
+                            $node->setAttributeNS('http://www.w3.org/2000/xmlns/', $this->reader->name, $this->reader->value);
+                        } elseif ($prefix) {
+                            $uri = $parent->lookupNamespaceUri($prefix) ?: @$nsUris[$prefix];
+                            if ($uri === NULL) {
+                                trigger_error(sprintf('Unable to lookup NS URI for attribute prefix "%s"', $prefix));
+                            }
+                            $node->setAttributeNS($uri, $this->reader->name, $this->reader->value);
+                        } else {
+                            $node->appendChild(new DOMAttr($this->reader->name, $this->reader->value));
+                        }
+                    } while ($this->reader->moveToNextAttribute());
+                }
+                break;
+
+            case XMLReader::END_ELEMENT:
+                $node = NULL;
+                break;
+
+            case XMLReader::COMMENT:
+                $node = $this->stack[$depth]->appendChild(new DOMComment($this->reader->value));
+                break;
+
+            case XMLReader::SIGNIFICANT_WHITESPACE:
+            case XMLReader::TEXT:
+            case XMLReader::WHITESPACE:
+                $node = $this->stack[$depth]->appendChild(new DOMText($this->reader->value));
+                break;
+
+            case XMLReader::PI:
+                $node = $this->stack[$depth]->appendChild(new DOMProcessingInstruction($this->reader->name, $this->reader->value));
+                break;
+
+            default:
+                $node    = NULL;
+                $message = sprintf('Unhandeled XMLReader node type %s', XMLReaderNode::dump($this->reader, TRUE));
+                trigger_error($message);
+        }
+
+        $this->depth = $depth;
+        $this->node  = $node;
+    }
+
+    private function nsUriSelfLookup($prefix) {
+        $uri = NULL;
+
+        if ($this->reader->moveToFirstAttribute()) {
+            do {
+                if ($this->reader->prefix === 'xmlns' && $this->reader->localName === $prefix) {
+                    $uri = $this->reader->value;
+                    break;
+                }
+            } while ($this->reader->moveToNextAttribute());
+            $this->reader->moveToElement();
+        }
+
+        return $uri;
+    }
+
+    public function next()
+    {
+        parent::next();
+        $this->lastDepth = $this->depth;
+        $this->lastNode  = $this->node;
+        $this->build();
+    }
+
+    /**
+     * @return \DOMNode
+     */
+    public function getLastNode()
+    {
+        return $this->lastNode;
+    }
+}
+
+/**
  * Class XMLReaderNode
  */
 class XMLReaderNode implements XMLReaderAggregate
@@ -603,6 +847,50 @@ class XMLReaderNode implements XMLReaderAggregate
         return $this->reader->$name;
     }
 
+    /**
+     * debug utility method
+     *
+     * @param XMLReader $reader
+     * @param bool $return (optional) prints by default but can return string
+     * @return string
+     */
+    public static function dump(XMLReader $reader, $return = FALSE)
+    {
+        $node = new self($reader);
+
+        $nodeType = $reader->nodeType;
+        $nodeName = $node->getNodeTypeName();
+
+        $isEmptyElement = $reader->nodeType !== XMLReader::NONE && $reader->isEmptyElement;
+
+        $extra = '';
+
+        if ($reader->nodeType === XMLReader::ELEMENT) {
+            $extra = '<' . $reader->name . '> ';
+        }
+
+        if ($reader->nodeType === XMLReader::END_ELEMENT) {
+            $extra = '</' . $reader->name . '> ';
+        }
+
+        if ($reader->nodeType === XMLReader::TEXT || $reader->nodeType === XMLReader::WHITESPACE || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE) {
+            $str = $reader->readString();
+            $len = strlen($str);
+            if ($len > 20) {
+                $str = substr($str, 0, 17) . '...';
+            }
+            $str   = strtr($str, ["\n" => '\n']);
+            $extra = sprintf('(%d) "%s" ', strlen($str), $str);
+        }
+
+        $label = sprintf("(#%d) %s %s", $nodeType, $nodeName, $extra);
+
+        if ($return) {
+            return $label;
+        }
+
+        printf("%s%s(isEmptyElement: %s)\n", str_repeat('  ', $reader->depth), $label, $isEmptyElement ? 'Yes' : 'No');
+    }
 }
 
 /**

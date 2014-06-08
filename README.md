@@ -2,6 +2,8 @@
 
 ### Changelog:
 
+ - `0.1.0` composer support has been added.
+
  - `0.0.23` first try of a compatibility layer for PHP installs with a libxml version below version 2.6.20.
   Functions with compat checks are `XMLReaderNode::readOuterXml()` and `XMLReaderNode::readString()`. Affected
   functions are  `XMLReaderNode::asSimpleXML()` and `XMLElementIterator::toArray()`.

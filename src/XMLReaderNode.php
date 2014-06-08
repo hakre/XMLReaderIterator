@@ -224,4 +224,48 @@ class XMLReaderNode implements XMLReaderAggregate
         return $this->reader->$name;
     }
 
+    /**
+     * debug utility method
+     *
+     * @param XMLReader $reader
+     * @param bool $return (optional) prints by default but can return string
+     * @return string
+     */
+    public static function dump(XMLReader $reader, $return = FALSE)
+    {
+        $node = new self($reader);
+
+        $nodeType = $reader->nodeType;
+        $nodeName = $node->getNodeTypeName();
+
+        $isEmptyElement = $reader->nodeType !== XMLReader::NONE && $reader->isEmptyElement;
+
+        $extra = '';
+
+        if ($reader->nodeType === XMLReader::ELEMENT) {
+            $extra = '<' . $reader->name . '> ';
+        }
+
+        if ($reader->nodeType === XMLReader::END_ELEMENT) {
+            $extra = '</' . $reader->name . '> ';
+        }
+
+        if ($reader->nodeType === XMLReader::TEXT || $reader->nodeType === XMLReader::WHITESPACE || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE) {
+            $str = $reader->readString();
+            $len = strlen($str);
+            if ($len > 20) {
+                $str = substr($str, 0, 17) . '...';
+            }
+            $str   = strtr($str, ["\n" => '\n']);
+            $extra = sprintf('(%d) "%s" ', strlen($str), $str);
+        }
+
+        $label = sprintf("(#%d) %s %s", $nodeType, $nodeName, $extra);
+
+        if ($return) {
+            return $label;
+        }
+
+        printf("%s%s(isEmptyElement: %s)\n", str_repeat('  ', $reader->depth), $label, $isEmptyElement ? 'Yes' : 'No');
+    }
 }
