@@ -1,11 +1,11 @@
 {
     "name": "hakre/xmlreaderiterator",
     "description": "Iterators for PHP XMLReader for ease of parsing",
-    "version": "0.1.0",
-    "keywords": "XML, XMLReader, Iterator",
+    "version": "0.1.1",
+    "keywords": ["XML", "XMLReader", "Iterator"],
     "homepage": "https://github.com/hakre/XMLReaderIterator",
     "minimum-stability": "stable",
-    "license": "AGPL-3.0+",
+    "license": "AGPL-3.0",
     "authors": [
         {
             "name": "hakre",

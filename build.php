@@ -3,7 +3,7 @@
 /**
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2014 hakre <http://hakre.wordpress.com>
  *
  * build script
  */
@@ -16,6 +16,11 @@ $concatenateDir = $buildDir . '/include';
 $concatenateFile = $concatenateDir . '/xmlreader-iterators.php';
 $autoLoadFile = __DIR__ . '/autoload.php';
 
+### test if composer.json validates ###
+built_test_composer_validate_json($errors);
+
+### test if a valid version can be obtained from composer.json ###
+$composerVersion = built_test_composer_json_get_version($errors);
 
 ### test if autoload.php contains all classes ###
 build_test_autoload_file($errors, $autoLoadFile);
@@ -33,19 +38,95 @@ if ($errors) {
 build_make_clean($errors, $buildDir, $concatenateDir);
 
 ### create concatenateFile ###
-build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile);
+build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile, $composerVersion);
 copy_file_to_dir('README.md', $concatenateDir);
 
 ### conditional build target into gist ###
 $gistDir = __DIR__ . '/../' . basename(__dir__) . '-Gist-5147685';
 if (is_dir($gistDir)) {
     copy_dir_to_dir($concatenateDir, $gistDir);
+} else {
+    printf("INFO: Gist build target directory not found.\n");
 }
 
 if ($errors) {
     printf("ERROR: Build had %d errors.\n");
 }
 
+/**
+ * @param $errors
+ *
+ * @return string|null
+ */
+function built_test_composer_json_get_version(&$errors)
+{
+    $file    = 'composer.json';
+    $data    = json_decode_file($file, true);
+    $version = isset($data['version']) ? $data['version'] : null;
+    if (!strlen($version)) {
+        echo "ERROR: Unable to obtain version from composer.json.\n";
+        $errors++;
+        return null;
+    }
+
+    echo "INFO: composer.json version is $version.\n";
+
+    if (!preg_match('~^\d.\d.\d$~', $version)) {
+        echo "ERROR: Unable to validate version '$version'.\n";
+        $errors++;
+        return null;
+    }
+
+    return $version;
+}
+
+/**
+ * @see http://php.net/json_decode
+ *
+ * @param      $path
+ * @param bool $assoc
+ * @param int  $depth
+ * @param int  $options
+ *
+ * @return mixed
+ */
+function json_decode_file($path, $assoc = false, $depth = 512, $options = 0)
+{
+    return json_decode(file_get_contents($path), $assoc, $depth, $options);
+}
+
+/**
+ * @param $errors
+ */
+function built_test_composer_validate_json(&$errors)
+{
+    echo "INFO: Validating composer.json before building:\n";
+
+    $composer = 'composer';
+
+    $command = "$composer --version";
+
+    $lastline = exec($command, $output, $exitCode);
+    list($versionLine) = $output;
+    if (!preg_match('~^Composer version [0-9a-f]{40} 2\d{3}-(?:0\d|1[0-2])-(?:[0-2]\d|3[0-1]) (?:[0-1]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)$~', $versionLine)) {
+        echo "ERROR: Unable to invoke Composer.\n";
+        $errors++;
+        return;
+    }
+
+    $command = "$composer validate";
+    system($command, $exitCode);
+    if ($exitCode !== 0) {
+        echo "ERROR: Composer json validation did return exit code $exitCode which is not 0.\n";
+        $errors++;
+
+        return;
+    }
+
+    echo "INFO: composer.json validation did pass. You might need to review warnings your own.\n";
+
+    return;
+}
 
 /**
  * @param $errors
@@ -117,7 +198,7 @@ function build_test_autoload_file(&$errors, $autoLoadFile)
  * @internal param $buildDir
  * @internal param $concatenateFileHandle
  */
-function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile)
+function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile, $version)
 {
     if (!is_dir(dirname($concatenateFile))) {
         echo "ERROR: target dir '", dirname($concatenateFile), "' missing.\n";
@@ -205,6 +286,34 @@ function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile
     } while (false);
 
     fclose($concatenateFileHandle);
+
+    $buffer = file_get_contents($concatenateFile);
+
+    $search  = " * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>\n */";
+    $replace = " * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>\n * @version $version\n */";
+
+    $pos = strpos($buffer, $search);
+    if (!$pos) {
+        echo "ERROR: Unable to find search string in buffer.\n";
+        $errors++;
+        return;
+    }
+
+    $buffer = substr_replace($buffer, $replace, $pos, strlen($search));
+
+    if (!is_string($buffer)) {
+        echo "ERROR: Failed to replace in buffer.\n";
+        $errors++;
+        return;
+    }
+
+    $bytesWritten = file_put_contents($concatenateFile, $buffer);
+
+    if (false === $bytesWritten) {
+        echo "ERROR: Failed to write back to file.\n";
+        $errors++;
+        return;
+    }
 }
 
 /**
