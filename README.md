@@ -2,6 +2,8 @@
 
 ### Changelog:
 
+ - `0.1.2` added `XMLWritingIteration`. an iteration to write with `XMLWriter` from `XMLReader`.
+
  - `0.1.0` composer support has been added.
 
  - `0.0.23` first try of a compatibility layer for PHP installs with a libxml version below version 2.6.20.
@@ -24,6 +26,7 @@
 
 ### Code examples for the XMLReader Iterators (latests on top):
 
+- [How to distinguish between empty element and null-size string in DOMDocument?](http://stackoverflow.com/a/24109776/367456)
 - [PHP XML parser: How to read only part of the XML document?](http://stackoverflow.com/a/15443517/367456)
 - [Parse XML with PHP and XMLReader](http://stackoverflow.com/a/15351723/367456)
 - [Getting XML Attribute with XMLReader and PHP](http://stackoverflow.com/a/15399491/367456)

@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.1
+ * @version 0.1.2
  */
 
 /**
@@ -645,6 +645,74 @@ class DOMReadingIteration extends IteratorIterator
 }
 
 /**
+ * Class XMLWritingIteration
+ *
+ * @since 0.1.2
+ */
+class XMLWritingIteration extends IteratorIterator
+{
+    /**
+     * @var XMLWriter
+     */
+    private $writer;
+
+    /**
+     * @var XMLReader
+     */
+    private $reader;
+
+    public function __construct(XMLWriter $writer, XMLReader $reader) {
+        $this->writer = $writer;
+        $this->reader = $reader;
+
+        parent::__construct(new XMLReaderIteration($reader));
+    }
+
+    public function write() {
+        $this->writeReaderImpl($this->writer, $this->reader);
+    }
+
+    private function writeReaderImpl(XMLWriter $writer, XMLReader $reader) {
+        switch ($reader->nodeType) {
+            case XMLReader::ELEMENT:
+                $writer->startElement($reader->name);
+
+                if ($reader->moveToFirstAttribute()) {
+                    do {
+                        $writer->writeAttribute($reader->name, $reader->value);
+                    } while ($reader->moveToNextAttribute());
+                    $reader->moveToElement();
+                }
+
+                if ($reader->isEmptyElement) {
+                    $writer->endElement();
+                }
+                break;
+
+            case XMLReader::END_ELEMENT:
+                $writer->endElement();
+                break;
+
+            case XMLReader::COMMENT:
+                $writer->writeComment($reader->value);
+                break;
+
+            case XMLReader::SIGNIFICANT_WHITESPACE:
+            case XMLReader::TEXT:
+                $writer->text($reader->value);
+                break;
+
+            case XMLReader::PI:
+                $writer->writePi($reader->name, $reader->value);
+                break;
+
+            default:
+                XMLReaderNode::dump($reader);
+        }
+    }
+}
+
+/**
  * Class XMLReaderNode
  */
 class XMLReaderNode implements XMLReaderAggregate
@@ -871,6 +939,16 @@ class XMLReaderNode implements XMLReaderAggregate
 
         if ($reader->nodeType === XMLReader::END_ELEMENT) {
             $extra = '</' . $reader->name . '> ';
+        }
+
+        if ($reader->nodeType === XMLReader::ATTRIBUTE) {
+            $str = $reader->value;
+            $len = strlen($str);
+            if ($len > 20) {
+                $str = substr($str, 0, 17) . '...';
+            }
+            $str   = strtr($str, ["\n" => '\n']);
+            $extra = sprintf('%s = (%d) "%s" ', $reader->name, strlen($str), $str);
         }
 
         if ($reader->nodeType === XMLReader::TEXT || $reader->nodeType === XMLReader::WHITESPACE || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE) {

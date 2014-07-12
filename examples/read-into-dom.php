@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2012, 2014 hakre <http://hakre.wordpress.com>
  *
- * Example: Build a DOMDocument with XMLReaderITeration
+ * Example: Build a DOMDocument with DOMReadingIteration
  */
 
 require('xmlreader-iterators.php'); // require XMLReaderIterator library

@@ -15,6 +15,7 @@ require $xmlReaderIterator_libPath . '/XMLAttributeIterator.php';
 require $xmlReaderIterator_libPath . '/XMLReaderIterator.php';
 require $xmlReaderIterator_libPath . '/XMLReaderIteration.php';
 require $xmlReaderIterator_libPath . '/DOMReadingIteration.php';
+require $xmlReaderIterator_libPath . '/XMLWritingIteration.php';
 require $xmlReaderIterator_libPath . '/XMLReaderNode.php';
 require $xmlReaderIterator_libPath . '/XMLReaderElement.php';
 require $xmlReaderIterator_libPath . '/XMLChildIterator.php';

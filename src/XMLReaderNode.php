@@ -250,6 +250,16 @@ class XMLReaderNode implements XMLReaderAggregate
             $extra = '</' . $reader->name . '> ';
         }
 
+        if ($reader->nodeType === XMLReader::ATTRIBUTE) {
+            $str = $reader->value;
+            $len = strlen($str);
+            if ($len > 20) {
+                $str = substr($str, 0, 17) . '...';
+            }
+            $str   = strtr($str, ["\n" => '\n']);
+            $extra = sprintf('%s = (%d) "%s" ', $reader->name, strlen($str), $str);
+        }
+
         if ($reader->nodeType === XMLReader::TEXT || $reader->nodeType === XMLReader::WHITESPACE || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE) {
             $str = $reader->readString();
             $len = strlen($str);

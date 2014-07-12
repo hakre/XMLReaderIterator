@@ -104,7 +104,7 @@ function built_test_composer_validate_json(&$errors)
 
     $composer = 'composer';
 
-    $command = "$composer --version";
+    $command = "$composer --no-ansi --version";
 
     $lastline = exec($command, $output, $exitCode);
     list($versionLine) = $output;
@@ -114,7 +114,7 @@ function built_test_composer_validate_json(&$errors)
         return;
     }
 
-    $command = "$composer validate";
+    $command = "$composer --no-ansi validate";
     system($command, $exitCode);
     if ($exitCode !== 0) {
         echo "ERROR: Composer json validation did return exit code $exitCode which is not 0.\n";
