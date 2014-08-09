@@ -2,7 +2,10 @@
 
 ### Changelog:
 
- - `0.1.2` added `XMLWritingIteration`. an iteration to write with `XMLWriter` from `XMLReader`.
+ - `0.1.3` added `XMLSequenceStream`, a PHP stream wrapper to read XML from files which are a sequence of XML
+  documents. Works transparently with `XMLReader`.
+
+ - `0.1.2` added `XMLWritingIteration`, an iteration to write with `XMLWriter` from `XMLReader`.
 
  - `0.1.0` composer support has been added.
 

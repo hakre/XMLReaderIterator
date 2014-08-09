@@ -39,7 +39,7 @@ class XMLElementIterator extends XMLReaderIterator
     public function __construct(XMLReader $reader, $name = null)
     {
         parent::__construct($reader);
-        $this->name = '*' === $name ? null : $name;
+        $this->setName($name);
     }
 
     public function rewind()
@@ -141,5 +141,12 @@ class XMLElementIterator extends XMLReaderIterator
     public function __get($name)
     {
         return $this->current()->$name;
+    }
+
+    /**
+     * @param null|string $name
+     */
+    public function setName($name = null) {
+        $this->name = '*' === $name ? null : $name;
     }
 }

@@ -29,26 +29,24 @@ class XMLReaderNode implements XMLReaderAggregate
     public $name;
     private $reader;
     private $nodeType;
-    private $nodeTypeString;
     private $string;
     private $attributes;
     private $simpleXML;
 
-    // TODO check which example used string and check if it can be removed (must been one of the earlier ones)
-
-    public function __construct(XMLReader $reader, $string = null)
+    public function __construct(XMLReader $reader)
     {
         $this->reader         = $reader;
         $this->nodeType       = $reader->nodeType;
-        $this->nodeTypeString = $this->getNodeTypeName();
-        $this->name           = $this->reader->name;
-        $this->string         = $string;
+        $this->name           = $reader->name;
     }
 
     public function __toString()
     {
-        // TODO CLEAN $reader->readString()? / value?
-        return $this->string ? $this->string : $this->reader->value;
+        if (null === $this->string) {
+            $this->string = $this->readString();
+        }
+
+        return $this->string;
     }
 
     /**

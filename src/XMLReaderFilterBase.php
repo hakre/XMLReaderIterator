@@ -38,6 +38,6 @@ abstract class XMLReaderFilterBase extends FilterIterator implements XMLReaderAg
      */
     public function getReader()
     {
-        return $this->getInnerIterator()->getHeader();
+        return $this->getInnerIterator()->getReader();
     }
 }

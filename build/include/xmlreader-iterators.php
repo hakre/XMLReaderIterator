@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.2
+ * @version 0.1.3
  */
 
 /**
@@ -720,26 +720,24 @@ class XMLReaderNode implements XMLReaderAggregate
     public $name;
     private $reader;
     private $nodeType;
-    private $nodeTypeString;
     private $string;
     private $attributes;
     private $simpleXML;
 
-    // TODO check which example used string and check if it can be removed (must been one of the earlier ones)
-
-    public function __construct(XMLReader $reader, $string = null)
+    public function __construct(XMLReader $reader)
     {
         $this->reader         = $reader;
         $this->nodeType       = $reader->nodeType;
-        $this->nodeTypeString = $this->getNodeTypeName();
-        $this->name           = $this->reader->name;
-        $this->string         = $string;
+        $this->name           = $reader->name;
     }
 
     public function __toString()
     {
-        // TODO CLEAN $reader->readString()? / value?
-        return $this->string ? $this->string : $this->reader->value;
+        if (null === $this->string) {
+            $this->string = $this->readString();
+        }
+
+        return $this->string;
     }
 
     /**
@@ -1071,7 +1069,7 @@ class XMLElementIterator extends XMLReaderIterator
     public function __construct(XMLReader $reader, $name = null)
     {
         parent::__construct($reader);
-        $this->name = '*' === $name ? null : $name;
+        $this->setName($name);
     }
 
     public function rewind()
@@ -1174,6 +1172,13 @@ class XMLElementIterator extends XMLReaderIterator
     {
         return $this->current()->$name;
     }
+
+    /**
+     * @param null|string $name
+     */
+    public function setName($name = null) {
+        $this->name = '*' === $name ? null : $name;
+    }
 }
 
 /**
@@ -1241,7 +1246,7 @@ abstract class XMLReaderFilterBase extends FilterIterator implements XMLReaderAg
      */
     public function getReader()
     {
-        return $this->getInnerIterator()->getHeader();
+        return $this->getInnerIterator()->getReader();
     }
 }
 
@@ -1419,5 +1424,493 @@ class XMLElementXpathFilter extends XMLReaderFilterBase
         }
 
         return !($result[0]->children()->count());
+    }
+}
+
+/**
+ * Class BufferedFileRead
+ *
+ * @since 0.1.3
+ */
+final class BufferedFileRead
+{
+    /**
+     * @var string
+     */
+    public $buffer;
+
+    /**
+     * @var resource
+     */
+    private $handle;
+
+    /**
+     * @var string
+     */
+    private $file;
+
+    /**
+     * number of bytes to have *maximum* ahead in buffer at read
+     *
+     * @var int
+     * @see readAhead
+     */
+    private $maxAhead = 8192;
+
+    /**
+     * number of bytes to read ahead. can not be larger than
+     * maxAhead.
+     *
+     * @var int
+     * @see maxAhead
+     */
+    private $readAhead = 0;
+
+    /**
+     * @param      $filename
+     * @param      $mode
+     * @param null $use_include_path
+     * @param null $context
+     *
+     * @return bool
+     */
+    public function fopen($filename, $mode, $use_include_path = null, $context = null) {
+
+        if ($mode !== 'rb') {
+            trigger_error(
+                sprintf("unsupported mode '%s', only 'rb' is supported for buffered file read", $mode)
+            );
+            return false;
+        }
+
+        $handle = fopen($filename, 'rb', $use_include_path, $context);
+        if (!$handle) {
+            return false;
+        }
+
+        $this->file   = $filename;
+        $this->handle = $handle;
+
+        return true;
+    }
+
+    /**
+     * appends up to $count bytes to the buffer up to
+     * the read-ahead limit
+     *
+     * @param $count
+     *
+     * @return int|bool length of buffer or FALSE on error
+     */
+    public function append($count)
+    {
+        $bufferLen = strlen($this->buffer);
+
+        if ($bufferLen >= $count + $this->maxAhead) {
+            return $bufferLen;
+        }
+
+        ($ahead = $this->readAhead)
+            && ($delta = $bufferLen - $ahead) < 0
+            && $count -= $delta;
+
+        $read = fread($this->handle, $count);
+        if ($read === false) {
+            throw new UnexpectedValueException(sprintf('Can not deal with fread() errors.'));
+        }
+
+        if ($readLen = strlen($read)) {
+            $this->buffer .= $read;
+            $bufferLen += $readLen;
+        }
+
+        return $bufferLen;
+    }
+
+    /**
+     * shift bytes from buffer
+     *
+     * @param $bytes - up to buffer-length bytes
+     *
+     * @return string
+     */
+    public function shift($bytes)
+    {
+        $bufferLen = strlen($this->buffer);
+
+        if ($bytes === $bufferLen) {
+            $return       = $this->buffer;
+            $this->buffer = '';
+        } else {
+            $return       = substr($this->buffer, 0, $bytes);
+            $this->buffer = substr($this->buffer, $bytes);
+        }
+
+        return $return;
+    }
+
+    public function fread($count) {
+        return fread($this->handle, $count);
+    }
+
+    public function feof() {
+        return feof($this->handle);
+    }
+
+    /**
+     * @return string
+     */
+    public function getFile() {
+        return $this->file;
+    }
+
+    public function __toString() {
+        return $this->file;
+    }
+
+    /**
+     * @return int
+     */
+    public function getReadAhead() {
+        return $this->readAhead;
+    }
+
+    /**
+     * @param int $readAhead
+     */
+    public function setReadAhead($readAhead) {
+        $this->readAhead = max(0, (int)$readAhead);
+    }
+
+    public function close() {
+        if ($this->handle && fclose($this->handle)) {
+            $this->handle = null;
+        }
+
+        $this->buffer = '';
+    }
+
+    public function __destruct() {
+        $this->close();
+    }
+}
+
+/**
+ * Class BufferedFileReaders
+ *
+ * Brigade of BufferedFileRead objects as keyed instances based on
+ * their filename.
+ *
+ * @since 0.1.3
+ */
+class BufferedFileReaders
+{
+    /**
+     * this wrapper is a multi-singleton based on the filename
+     *
+     * @var BufferedFileRead[]
+     */
+    private $readers;
+
+    /**
+     * @param $filename
+     * @param $mode
+     * @param $use_include_path
+     * @param $context
+     *
+     * @return BufferedFileRead or null on error
+     */
+    public function getReaderForFile($filename, $mode, $use_include_path, $context)
+    {
+        $readers = $this->readers;
+        if (!isset($readers[$filename])) {
+            $reader = new BufferedFileRead();
+            $result = $reader->fopen($filename, $mode, $use_include_path, $context);
+
+            return $this->readers[$filename] = $result ? $reader : null;
+        }
+        return $readers[$filename];
+    }
+
+    public function close()
+    {
+        if (!$this->readers) {
+            return;
+        }
+
+        foreach ($this->readers as $reader) {
+            $reader && $reader->close();
+        }
+
+        $this->readers = null;
+    }
+
+    public function removeReaderForFile($filename)
+    {
+        if (!isset($this->readers[$filename])) {
+            return false;
+        }
+
+        $this->readers[$filename]->close();
+
+        unset($this->readers[$filename]);
+
+        return true;
+    }
+
+    public function isFileConsumed($filename)
+    {
+        if (!isset($this->readers[$filename]) || !$reader = $this->readers[$filename]) {
+            return false;
+        }
+
+        if ($reader->feof() && !strlen($reader->buffer)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function __destruct()
+    {
+        $this->close();
+    }
+}
+
+/**
+ * Class XMLSequenceStreamPath
+ *
+ * @since 0.1.3
+ */
+class XMLSequenceStreamPath
+{
+    /**
+     * @var string
+     */
+    private $path;
+
+    public function __construct($path) {
+        $this->path = $path;
+    }
+
+    public function getProtocol() {
+        $parts = $this->parsePath($this->path);
+        return $parts['scheme'];
+    }
+
+    public function getSpecific() {
+        $parts = $this->parsePath($this->path);
+        return $parts['specific'];
+    }
+
+    public function getFile() {
+        $specific = $this->getSpecific();
+        $specific = str_replace(array('\\', '/./'), '/', $specific);
+        return $specific;
+    }
+
+    private function parsePath($path) {
+
+        $parts = array_combine(array('scheme', 'specific'), explode('://', $path, 2) + array(null, null));
+
+        if (null === $parts['specific']) {
+            throw new UnexpectedValueException(sprintf("Path '%s' has no protocol", $path));
+        }
+
+        return $parts;
+    }
+
+    function __toString() {
+        return $this->path;
+    }
+}
+
+/**
+ * Class XMLSequenceStream
+ *
+ * @since 0.1.3
+ */
+class XMLSequenceStream
+{
+    /**
+     * @var resource
+     */
+    public $context;
+
+    /**
+     * @var string
+     */
+    private $file;
+
+    /**
+     * @var BufferedFileRead
+     */
+    private $reader;
+
+    /**
+     * this wrapper keeps a multi-singleton based on the filename
+     * for read buffers to allow multiple stream operations
+     * after another.
+     *
+     * @var BufferedFileReaders
+     */
+    public static $readers;
+
+    /**
+     * @var bool
+     */
+    private $flagEof;
+
+    private $declFound = 0;
+
+    /**
+     * clear reader buffers, close open files if any.
+     */
+    public static function clean()
+    {
+        self::$readers->close();
+    }
+
+    /**
+     * @param string $path filename of the buffer to close, complete with wrapper prefix
+     *
+     * @return bool
+     */
+    public static function closeBuffer($path)
+    {
+        if (!self::$readers) {
+            return false;
+        }
+
+        $path = new XMLSequenceStreamPath($path);
+        $file = $path->getFile();
+
+        return self::$readers->removeReaderForFile($file);
+    }
+
+    /**
+     * @param $path
+     *
+     * @return bool
+     */
+    public static function notAtEndOfSequence($path)
+    {
+        if (!self::$readers) {
+            return true;
+        }
+
+        $path = new XMLSequenceStreamPath($path);
+        $file = $path->getFile();
+
+        return !self::$readers->isFileConsumed($file);
+    }
+
+    public function __construct()
+    {
+        # fputs(STDOUT, sprintf('<contruct>'));
+        self::$readers || self::$readers = new BufferedFileReaders();
+    }
+
+    /**
+     * @param string $path
+     * @param string $mode
+     * @param int    $options
+     * @param string $opened_path
+     *
+     * @return bool
+     */
+    public function stream_open($path, $mode, $options, &$opened_path)
+    {
+        # fputs(STDOUT, sprintf('<open: %s - raise errors: %d - use path: %d >', var_export($path, 1), $options & STREAM_REPORT_ERRORS, $options & STREAM_USE_PATH));
+        $path = new XMLSequenceStreamPath($path);
+
+        $file         = $path->getFile();
+        $reader       = self::$readers->getReaderForFile($file, $mode, null, $this->context);
+        $this->file   = $file;
+        $this->reader = $reader;
+
+        if (!$reader) {
+            return false;
+        }
+
+        $reader->setReadAhead(256);
+        if ($reader->feof() && !strlen($reader->buffer)) {
+            $message = sprintf('Concatenated XML Stream: Resource %s at the end of stream', var_export($file, true));
+            trigger_error($message);
+            return false;
+        }
+
+        return true;
+    }
+
+    public function stream_stat()
+    {
+        return false;
+    }
+
+    /**
+     * @param string $path
+     * @param int    $flags
+     *
+     * @return bool
+     */
+    public function url_stat($path, $flags)
+    {
+        # fputs(STDOUT, sprintf('<url stat: %s - Link: %d - Quiet: %d>', var_export($path, 1), $flags & STREAM_URL_STAT_LINK, $flags | STREAM_URL_STAT_QUIET));
+
+        return array();
+    }
+
+    public function stream_read($count)
+    {
+        $reader = $this->reader;
+
+        # fputs(STDOUT, sprintf('<read: %d - buffer: %d - eof: %d>', $count, strlen($reader->buffer), $this->flagEof));
+
+        if ($this->flagEof) {
+            return false;
+        }
+
+        $bufferLen = $reader->append($count);
+        # fputs(STDOUT, sprintf('<buffer: %d>', $bufferLen));
+
+        $pos = $this->declPos();
+        if (!$this->declFound && $pos !== false) {
+            $this->declFound++;
+            if ($pos !== 0) {
+                throw new UnexpectedValueException(sprintf('First XML declaration expected at offset 0, found at %d', $pos));
+            }
+            $pos = $this->declPos(5);
+        }
+
+        if ($pos === false) {
+            $returnLen = min($bufferLen, $count);
+        } else {
+            $returnLen = min($pos, $count);
+            if ($returnLen >= $pos) {
+                $this->flagEof = true;
+            }
+            $this->declFound++;
+        }
+
+        $return = $reader->shift($returnLen);
+
+        return $return;
+    }
+
+    private function declPos($offset = 0)
+    {
+        $declPattern = '(<\?xml\s+version\s*=\s*(["\'])(1\.\d+)\1\s+encoding\s*=\s*(["\'])(((?!\3).)*)\3)';
+        $result      = preg_match($declPattern, $this->reader->buffer, $matches, PREG_OFFSET_CAPTURE, $offset);
+        if ($result === FALSE) {
+            throw new UnexpectedValueException('Regex failed.');
+        }
+
+        return $result ? $matches[0][1] : false;
+    }
+
+    public function stream_eof()
+    {
+        return $this->flagEof;
     }
 }

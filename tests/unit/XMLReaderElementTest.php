@@ -55,7 +55,14 @@ class XMLReaderElementTest extends PHPUnit_Framework_TestCase
 
     /** @test  */
     public function checkNodeValue() {
-        $reader = new XMLReaderStub('<root><b></b></root>');
-        $this->markTestSkipped('node value reading pending to readString() compat checks.');
+        $reader = new XMLReaderStub('<root><b>has</b></root>');
+
+        $it = new XMLElementIterator($reader);
+        $count = 0;
+        foreach ($it as $element) {
+            $this->assertEquals('has', $element->readString());
+            $count++;
+        }
+        $this->assertEquals(2, $count);
     }
 }

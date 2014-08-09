@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2014 hakre <http://hakre.wordpress.com>
  *
  * auto-load / bootstrap (the file-name as common as it is might be little misleading here so far)
  */
@@ -27,3 +27,7 @@ require $xmlReaderIterator_libPath . '/XMLAttributeFilterBase.php';
 require $xmlReaderIterator_libPath . '/XMLAttributeFilter.php';
 require $xmlReaderIterator_libPath . '/XMLAttributePreg.php';
 require $xmlReaderIterator_libPath . '/XMLElementXpathFilter.php';
+require $xmlReaderIterator_libPath . '/BufferedFileRead.php';
+require $xmlReaderIterator_libPath . '/BufferedFileReaders.php';
+require $xmlReaderIterator_libPath . '/XMLSequenceStreamPath.php';
+require $xmlReaderIterator_libPath . '/XMLSequenceStream.php';
