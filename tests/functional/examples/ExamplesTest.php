@@ -38,7 +38,7 @@ class ExamplesTest extends \PHPUnit_Framework_TestCase
                 $cwd = getcwd();
                 chdir(dirname($file));
                 {
-                    include($file);
+                    $this->saveInclude($file);
                 }
                 chdir($cwd);
                 unset($cwd);
@@ -50,6 +50,10 @@ class ExamplesTest extends \PHPUnit_Framework_TestCase
 
         $expectedFile = $this->getExpectedFile($file);
         $this->assertStringEqualsFile($expectedFile, $buffer);
+    }
+
+    private function saveInclude() {
+        include func_get_arg(0);
     }
 
     private function getExpectedFile($forFile) {

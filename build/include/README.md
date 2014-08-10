@@ -2,6 +2,8 @@
 
 ### Changelog:
 
+ - `0.1.6` maintenance release with fixes. added xml-file-scanner command-line tool example.
+
  - `0.1.5` maintenance release with tests and new `XMLReaderNextIteration` to iterate in `XMLReader::next()` fashion.
 
  - `0.1.4` maintenance release with fixes.

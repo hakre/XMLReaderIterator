@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.5
+ * @version 0.1.6
  */
 
 /**
@@ -1341,44 +1341,97 @@ class XMLElementIterator extends XMLReaderIterator
  */
 class XMLChildElementIterator extends XMLElementIterator
 {
+    /**
+     * @var null|int
+     */
     private $stopDepth;
+
+    /**
+     * @var bool
+     */
     private $descendTree;
 
     /**
+     * @var bool
+     */
+    private $didRewind;
+
+    /**
+     * @var int
+     */
+    private $index;
+
+    /**
      * @inheritdoc
-     * @param bool $descendantAxis traverse deep into?
+     *
+     * @param bool $descendantAxis traverse children of children
      */
     public function __construct(XMLReader $reader, $name = null, $descendantAxis = false)
     {
         parent::__construct($reader, $name);
-        $this->stopDepth   = $reader->depth;
         $this->descendTree = $descendantAxis;
     }
 
     /**
-     * @return XMLChildElementIterator
+     * @throws UnexpectedValueException
+     * @return void
      */
     public function rewind()
     {
+        // this iterator can not really rewind. instead it places itself onto the
+        // first children.
+
+        if ($this->reader->nodeType === XMLReader::NONE) {
+            $this->moveToNextElement();
+        }
+
+        if ($this->stopDepth === null) {
+            $this->stopDepth = $this->reader->depth;
+        }
+
+        // move to first child - if any
         parent::next();
         parent::rewind();
 
-        return $this;
+        $this->index = 0;
+        $this->didRewind = true;
     }
 
     public function next()
     {
-        do {
+        if ($this->valid()) {
+            $this->index++;
+        }
+
+        while ($this->valid()) {
             parent::next();
             if ($this->descendTree || $this->reader->depth === $this->stopDepth + 1) {
                 break;
             }
-        } while ($this->valid());
+        };
     }
 
     public function valid()
     {
-        return parent::valid() && $this->reader->depth > $this->stopDepth;
+        if (!($valid = parent::valid())) {
+            return $valid;
+        }
+
+        return $this->reader->depth > $this->stopDepth;
+    }
+
+    /**
+     * @return XMLReaderNode|null
+     */
+    public function current()
+    {
+        $this->didRewind || self::rewind();
+        return parent::current();
+    }
+
+    public function key()
+    {
+        return $this->index;
     }
 }
 

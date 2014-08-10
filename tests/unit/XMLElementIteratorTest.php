@@ -59,7 +59,8 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
         /** @var XMLElementIterator|XMLReaderNode[] $it */
         $it = new XMLElementIterator($reader);
 
-        $this->assertEquals(null, $it->valid());
+        $this->assertEquals(false, $it->valid());
+        $this->assertSame(null, $it->valid());
 
         $it->rewind();
         $this->assertEquals(true, $it->valid());
