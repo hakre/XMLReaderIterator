@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2014 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,16 +21,31 @@
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
  */
 
+/**
+ * Class XMLReaderStub
+ *
+ * Stub class to write tests more quickly, allows to create an XMLReader on strings with XML
+ *
+ * @see XMLReader
+ */
 class XMLReaderStub extends XMLReader
 {
     private $xml;
 
-    public function __construct($xml) {
+    public function __construct($xml)
+    {
         $this->xml = $xml;
         $this->rewind();
     }
 
-    public function rewind() {
-        $this->open('data://text/xml;base64,' . base64_encode($this->xml));
+    public function rewind()
+    {
+        $xml = $this->xml;
+
+        if ($xml[0] === '<') {
+            $xml = 'data://text/xml;base64,' . base64_encode($this->xml);
+        }
+
+        $this->open($xml);
     }
 }

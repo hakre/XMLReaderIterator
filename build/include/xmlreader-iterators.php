@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.3
+ * @version 0.1.5
  */
 
 /**
@@ -491,6 +491,79 @@ class XMLReaderIteration implements Iterator
     }
 }
 
+/**
+ * Class XMLReaderNextIteration
+ *
+ * Iteration over XMLReader skipping subtrees
+ *
+ * @link http://php.net/manual/en/xmlreader.next.php
+ *
+ * @since 0.1.5
+ */
+class XMLReaderNextIteration implements Iterator
+{
+    /**
+     * @var XMLReader
+     */
+    private $reader;
+    private $index;
+    private $valid;
+    private $localName;
+
+    public function __construct(XMLReader $reader, $localName = null)
+    {
+        $this->reader    = $reader;
+        $this->localName = $localName;
+    }
+
+    public function rewind()
+    {
+        // XMLReader can not rewind, instead we move on if before the first node
+        $this->moveReaderToCurrent();
+
+        $this->index = 0;
+    }
+
+    public function valid()
+    {
+        return $this->valid;
+    }
+
+    public function current()
+    {
+        return $this->reader;
+    }
+
+    public function key()
+    {
+        return $this->index;
+    }
+
+    public function next()
+    {
+        $this->valid && $this->index++;
+        if ($this->localName) {
+            $this->valid = $this->reader->next($this->localName);
+        } else {
+            $this->valid = $this->reader->next();
+        }
+    }
+
+    /**
+     * move cursor to the next element but only if it's not yet there
+     */
+    private function moveReaderToCurrent()
+    {
+        if (
+            ($this->reader->nodeType === XMLReader::NONE)
+            or ($this->reader->nodeType !== XMLReader::ELEMENT)
+            or ($this->localName && $this->localName !== $this->reader->localName)
+        ) {
+            self::next();
+        }
+    }
+}
+
 
 /**
  * Class DOMReadingIteration
@@ -840,7 +913,7 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @return XMLChildIterator
+     * @return XMLChildIterator|XMLReaderNode[]
      */
     public function getChildren()
     {
@@ -1181,24 +1254,6 @@ class XMLElementIterator extends XMLReaderIterator
         }
         parent::next();
         $this->ensureCurrentElementState();
-    }
-
-    /**
-     * read string from the first element (if not yet rewinded), otherwise from the current element as
-     * long as valid. null if not valid.
-     *
-     * TODO test if it can be removed due to the fact of decorating ->current() via __call() and __get()
-     *      port third example (one before the asSimeplXML / toArray() variant)
-     *      one reason it can't be removed is the rewind when starting.
-     *      -> most likely this whole function can be put into __toString()
-     *
-     * @return null|string
-     */
-    public function readString()
-    {
-        isset($this->index) || $this->rewind();
-
-        return $this->current()->readString();
     }
 
     /**

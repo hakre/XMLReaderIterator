@@ -118,7 +118,7 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @return XMLChildIterator
+     * @return XMLChildIterator|XMLReaderNode[]
      */
     public function getChildren()
     {

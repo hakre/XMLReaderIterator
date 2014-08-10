@@ -80,24 +80,6 @@ class XMLElementIterator extends XMLReaderIterator
     }
 
     /**
-     * read string from the first element (if not yet rewinded), otherwise from the current element as
-     * long as valid. null if not valid.
-     *
-     * TODO test if it can be removed due to the fact of decorating ->current() via __call() and __get()
-     *      port third example (one before the asSimeplXML / toArray() variant)
-     *      one reason it can't be removed is the rewind when starting.
-     *      -> most likely this whole function can be put into __toString()
-     *
-     * @return null|string
-     */
-    public function readString()
-    {
-        isset($this->index) || $this->rewind();
-
-        return $this->current()->readString();
-    }
-
-    /**
      * @return array
      */
     public function toArray()

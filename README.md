@@ -2,6 +2,8 @@
 
 ### Changelog:
 
+ - `0.1.5` maintenance release with tests and new `XMLReaderNextIteration` to iterate in `XMLReader::next()` fashion.
+
  - `0.1.4` maintenance release with fixes.
 
  - `0.1.3` added `XMLSequenceStream`, a PHP stream wrapper to read XML from files which are a sequence of XML
@@ -12,8 +14,7 @@
  - `0.1.0` composer support has been added.
 
  - `0.0.23` first try of a compatibility layer for PHP installs with a libxml version below version 2.6.20.
-  Functions with compat checks are `XMLReaderNode::readOuterXml()` and `XMLReaderNode::readString()`. Affected
-  functions are  `XMLReaderNode::asSimpleXML()` and `XMLElementIterator::toArray()`.
+  Functions with compatibility checks are `XMLReaderNode::readOuterXml()` and `XMLReaderNode::readString()`.
 
  - `0.0.21` moved library into mew repository and added `XMLReaderAggregate`.
 

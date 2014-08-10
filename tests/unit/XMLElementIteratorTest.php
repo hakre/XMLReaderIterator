@@ -38,6 +38,20 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
     }
 
     /** @test */
+    public function string()
+    {
+        $reader = new XMLReaderStub('<root><b>has</b></root>');
+
+        /** @var XMLElementIterator|XMLReaderNode[] $it */
+        $it = new XMLElementIterator($reader);
+
+        $it->rewind();
+        $this->assertEquals(true, $it->valid());
+        $this->assertEquals("has", (string) $it);
+        $this->assertEquals("has", $it->readString());
+    }
+
+    /** @test */
     public function iteration()
     {
         $reader = new XMLReaderStub('<root><b>has</b></root>');
