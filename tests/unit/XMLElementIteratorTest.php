@@ -24,7 +24,7 @@
 class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
 {
     /** @test */
-    public function constructAndIterate()
+    public function creationAndCurrent()
     {
         $reader = $this->createReader();
 
@@ -35,6 +35,43 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
         $this->assertSame('node1', $it->current()->getName());
         $it->next();
         $this->assertSame('info1', $it->current()->getName());
+    }
+
+    /** @test */
+    public function iteration()
+    {
+        $reader = new XMLReaderStub('<root><b>has</b></root>');
+
+        /** @var XMLElementIterator|XMLReaderNode[] $it */
+        $it = new XMLElementIterator($reader);
+
+        $this->assertEquals(null, $it->valid());
+
+        $it->rewind();
+        $this->assertEquals(true, $it->valid());
+        $this->assertEquals('root', $it->current()->getName());
+        $this->assertEquals(0, $it->key());
+
+        $it->rewind();
+        $this->assertEquals(true, $it->valid());
+        $current = $it->current();
+        $this->assertEquals('root', $current->getName());
+        $this->assertEquals(0, $it->key());
+
+        $string = $current->readString();
+        $this->assertEquals('has', $string);
+
+        $it->next();
+        $this->assertEquals(true, $it->valid());
+        $current = $it->current();
+        $this->assertEquals('b', $current->getName());
+        $this->assertEquals(1, $it->key());
+
+        $it->next();
+        $this->assertEquals(false, $it->valid());
+        $current = $it->current();
+        $this->assertEquals(null, $current);
+
     }
 
     /** @test */
@@ -51,6 +88,27 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
         $array = $it->toArray();
         $this->assertSame(7, count($array));
         $this->assertSame("\n                test\n            ", $array['node4']);
+    }
+
+    /**
+     * @test
+     */
+    function iterateOverNamedElements()
+    {
+        $reader = new XMLReaderStub('<r><a>1</a><a>2</a><b>c</b><a>3</a></r>');
+        $it = new XMLElementIterator($reader, 'a');
+
+        $this->assertEquals(null, $it->valid());
+        $it->rewind();
+        $this->assertEquals(true, $it->valid());
+        $this->assertEquals('a', $it->current()->getName());
+        $it->next();
+        $this->assertEquals('a', $it->current()->getName());
+        $it->next();
+        $this->assertEquals('a', $it->current()->getName());
+        $this->assertEquals('3', $it);
+        $it->next();
+        $this->assertEquals(false, $it->valid());
     }
 
     private function createReader()

@@ -25,6 +25,8 @@
  * Class XMLReaderIteration
  *
  * Very basic XMLReader iteration
+ *
+ * @since 0.1.0
  */
 class XMLReaderIteration implements Iterator
 {

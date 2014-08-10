@@ -57,6 +57,7 @@ class XMLReaderElementTest extends PHPUnit_Framework_TestCase
     public function checkNodeValue() {
         $reader = new XMLReaderStub('<root><b>has</b></root>');
 
+        /** @var XMLElementIterator|XMLReaderNode[] $it */
         $it = new XMLElementIterator($reader);
         $count = 0;
         foreach ($it as $element) {

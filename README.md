@@ -2,6 +2,8 @@
 
 ### Changelog:
 
+ - `0.1.4` maintenance release with fixes.
+
  - `0.1.3` added `XMLSequenceStream`, a PHP stream wrapper to read XML from files which are a sequence of XML
   documents. Works transparently with `XMLReader`.
 

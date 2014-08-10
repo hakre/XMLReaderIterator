@@ -50,15 +50,35 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @return SimpleXMLElement
+     * SimpleXMLElement for XMLReader::ELEMENT
+     *
+     * @return SimpleXMLElement|null in case the current node can not be converted into a SimpleXMLElement
+     * @since 0.1.4
      */
-    public function asSimpleXML()
+    public function getSimpleXMLElement()
     {
-        if (null === $this->simpleXML) {
-            $this->simpleXML = new SimpleXMLElement($this->readOuterXml());
+        if (null === $this->simpleXML)
+        {
+            if ($this->reader->nodeType !== XMLReader::ELEMENT) {
+                return null;
+            }
+
+            $node = $this->getDocumentNode();
+            $this->simpleXML = simplexml_import_dom($node);
         }
 
         return $this->simpleXML;
+    }
+
+    /**
+     * Alias of @see getSimpleXMLElement()
+     *
+     * @return null|SimpleXMLElement
+     */
+    public function asSimpleXML()
+    {
+        trigger_error('Deprecated ' . __METHOD__ . '() - use getSimpleXMLElement() in the future', E_USER_NOTICE);
+        return $this->getSimpleXMLElement();
     }
 
     /**
@@ -118,7 +138,7 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * Decorated method
      *
-     * @throws BadMethodCallException
+     * @throws BadMethodCallException in case XMLReader can not expand the node
      * @return string
      */
     public function readOuterXml()
@@ -132,17 +152,40 @@ class XMLReaderNode implements XMLReaderAggregate
             return '';
         }
 
+        $node = $this->getDocumentNode();
+
+        /**
+         * FIXME this var hint is un-necessary
+         *
+         * @link http://youtrack.jetbrains.com/issue/WI-23810
+         *
+         * @var $doc DOMDocument
+         */
+        $doc  = $node->ownerDocument;
+        $doc->formatOutput = true;
+        $node = $doc->appendChild($node);
+        return $doc->saveXML($node);
+    }
+
+    /**
+     * XMLReader expand node and import it into a DOMNode with a DOMDocument
+     *
+     * This is for example useful for DOMDocument::saveXML() @see readOuterXml
+     * or getting a SimpleXMLElement out of it @see getSimpleXMLElement
+     *
+     * @throws BadMethodCallException
+     *
+     * @return DOMNode
+     */
+    private function getDocumentNode() {
         if (false === $node = $this->reader->expand()) {
             throw new BadMethodCallException('Unable to expand node.');
         }
 
-        $dom               = new DomDocument();
-        $dom->formatOutput = true;
+        $doc  = new DomDocument();
+        $node = $doc->importNode($node, true);
 
-        $docNode   = $dom->importNode($node, true);
-        $childNode = $dom->appendChild($docNode);
-
-        return $dom->saveXML($childNode);
+        return $node;
     }
 
     /**

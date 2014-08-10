@@ -42,24 +42,27 @@ class XMLElementIterator extends XMLReaderIterator
         $this->setName($name);
     }
 
+    /**
+     * @return void
+     */
     public function rewind()
     {
         parent::rewind();
-        parent::moveToNextElementByName($this->name);
+        $this->ensureCurrentElementState();
         $this->didRewind = true;
         $this->index     = 0;
-
-        return $this;
     }
 
     /**
-     * @return XMLReaderNode
+     * @return XMLReaderNode|null
      */
     public function current()
     {
         $this->didRewind || self::rewind();
 
-        return new XMLReaderNode($this->reader);
+        $this->ensureCurrentElementState();
+
+        return self::valid() ? new XMLReaderNode($this->reader) : null;
     }
 
     public function key()
@@ -73,7 +76,7 @@ class XMLElementIterator extends XMLReaderIterator
             $this->index++;
         }
         parent::next();
-        parent::moveToNextElementByName($this->name);
+        $this->ensureCurrentElementState();
     }
 
     /**
@@ -101,19 +104,27 @@ class XMLElementIterator extends XMLReaderIterator
     {
         $array = array();
 
-        /* @var $element XMLReaderNode */
-        foreach ($this as $element) {
+        $this->didRewind || $this->rewind();
+
+        if (!$this->valid()) {
+            return array();
+        }
+
+        $this->ensureCurrentElementState();
+
+        while ($this->valid()) {
+            $element = new XMLReaderNode($this->reader);
             if ($this->reader->hasValue) {
                 $string = $this->reader->value;
             } else {
                 $string = $element->readString();
             }
-
             if ($this->name) {
                 $array[] = $string;
             } else {
                 $array[$element->name] = $string;
             }
+            $this->moveToNextElementByName($this->name);
         }
 
         return $array;
@@ -146,7 +157,20 @@ class XMLElementIterator extends XMLReaderIterator
     /**
      * @param null|string $name
      */
-    public function setName($name = null) {
+    public function setName($name = null)
+    {
         $this->name = '*' === $name ? null : $name;
+    }
+
+    /**
+     * take care the underlying XMLReader is at an element with a fitting name (if $this is looking for a name)
+     */
+    private function ensureCurrentElementState()
+    {
+        if ($this->reader->nodeType !== XMLReader::ELEMENT) {
+            $this->moveToNextElementByName($this->name);
+        } elseif ($this->name && $this->name !== $this->reader->name) {
+            $this->moveToNextElementByName($this->name);
+        }
     }
 }

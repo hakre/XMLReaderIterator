@@ -280,9 +280,28 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
  */
 class XMLReaderIterator implements Iterator, XMLReaderAggregate
 {
+    /**
+     * @var XMLReader
+     */
     protected $reader;
+
+    /**
+     * @var int
+     */
     private $index;
+
+    /**
+     * stores the result of the last XMLReader::read() operation.
+     *
+     * additionally it's set to true if not initialized (null) on @see XMLReaderIterator::rewind()
+     *
+     * @var bool
+     */
     private $lastRead;
+
+    /**
+     * @var array
+     */
     private $elementStack;
 
     public function __construct(XMLReader $reader)
@@ -322,9 +341,11 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     {
         if (null === self::valid()) {
             self::rewind();
+        } elseif (self::valid()) {
+            self::next();
         }
 
-        while ($this->valid()) {
+        while (self::valid()) {
             if ($this->reader->nodeType === $nodeType) {
                 break;
             }
@@ -345,11 +366,17 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         $this->index = 0;
     }
 
+    /**
+     * @return bool
+     */
     public function valid()
     {
         return $this->lastRead;
     }
 
+    /**
+     * @return XMLReaderNode
+     */
     public function current()
     {
         return new XMLReaderNode($this->reader);
@@ -404,6 +431,8 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
  * Class XMLReaderIteration
  *
  * Very basic XMLReader iteration
+ *
+ * @since 0.1.0
  */
 class XMLReaderIteration implements Iterator
 {
@@ -465,6 +494,8 @@ class XMLReaderIteration implements Iterator
 
 /**
  * Class DOMReadingIteration
+ *
+ * @since 0.1.0
  */
 class DOMReadingIteration extends IteratorIterator
 {
@@ -741,15 +772,35 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * @return SimpleXMLElement
+     * SimpleXMLElement for XMLReader::ELEMENT
+     *
+     * @return SimpleXMLElement|null in case the current node can not be converted into a SimpleXMLElement
+     * @since 0.1.4
      */
-    public function asSimpleXML()
+    public function getSimpleXMLElement()
     {
-        if (null === $this->simpleXML) {
-            $this->simpleXML = new SimpleXMLElement($this->readOuterXml());
+        if (null === $this->simpleXML)
+        {
+            if ($this->reader->nodeType !== XMLReader::ELEMENT) {
+                return null;
+            }
+
+            $node = $this->getDocumentNode();
+            $this->simpleXML = simplexml_import_dom($node);
         }
 
         return $this->simpleXML;
+    }
+
+    /**
+     * Alias of @see getSimpleXMLElement()
+     *
+     * @return null|SimpleXMLElement
+     */
+    public function asSimpleXML()
+    {
+        trigger_error('Deprecated ' . __METHOD__ . '() - use getSimpleXMLElement() in the future', E_USER_NOTICE);
+        return $this->getSimpleXMLElement();
     }
 
     /**
@@ -809,7 +860,7 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * Decorated method
      *
-     * @throws BadMethodCallException
+     * @throws BadMethodCallException in case XMLReader can not expand the node
      * @return string
      */
     public function readOuterXml()
@@ -823,17 +874,40 @@ class XMLReaderNode implements XMLReaderAggregate
             return '';
         }
 
+        $node = $this->getDocumentNode();
+
+        /**
+         * FIXME this var hint is un-necessary
+         *
+         * @link http://youtrack.jetbrains.com/issue/WI-23810
+         *
+         * @var $doc DOMDocument
+         */
+        $doc  = $node->ownerDocument;
+        $doc->formatOutput = true;
+        $node = $doc->appendChild($node);
+        return $doc->saveXML($node);
+    }
+
+    /**
+     * XMLReader expand node and import it into a DOMNode with a DOMDocument
+     *
+     * This is for example useful for DOMDocument::saveXML() @see readOuterXml
+     * or getting a SimpleXMLElement out of it @see getSimpleXMLElement
+     *
+     * @throws BadMethodCallException
+     *
+     * @return DOMNode
+     */
+    private function getDocumentNode() {
         if (false === $node = $this->reader->expand()) {
             throw new BadMethodCallException('Unable to expand node.');
         }
 
-        $dom               = new DomDocument();
-        $dom->formatOutput = true;
+        $doc  = new DomDocument();
+        $node = $doc->importNode($node, true);
 
-        $docNode   = $dom->importNode($node, true);
-        $childNode = $dom->appendChild($docNode);
-
-        return $dom->saveXML($childNode);
+        return $node;
     }
 
     /**
@@ -1072,24 +1146,27 @@ class XMLElementIterator extends XMLReaderIterator
         $this->setName($name);
     }
 
+    /**
+     * @return void
+     */
     public function rewind()
     {
         parent::rewind();
-        parent::moveToNextElementByName($this->name);
+        $this->ensureCurrentElementState();
         $this->didRewind = true;
         $this->index     = 0;
-
-        return $this;
     }
 
     /**
-     * @return XMLReaderNode
+     * @return XMLReaderNode|null
      */
     public function current()
     {
         $this->didRewind || self::rewind();
 
-        return new XMLReaderNode($this->reader);
+        $this->ensureCurrentElementState();
+
+        return self::valid() ? new XMLReaderNode($this->reader) : null;
     }
 
     public function key()
@@ -1103,7 +1180,7 @@ class XMLElementIterator extends XMLReaderIterator
             $this->index++;
         }
         parent::next();
-        parent::moveToNextElementByName($this->name);
+        $this->ensureCurrentElementState();
     }
 
     /**
@@ -1131,19 +1208,27 @@ class XMLElementIterator extends XMLReaderIterator
     {
         $array = array();
 
-        /* @var $element XMLReaderNode */
-        foreach ($this as $element) {
+        $this->didRewind || $this->rewind();
+
+        if (!$this->valid()) {
+            return array();
+        }
+
+        $this->ensureCurrentElementState();
+
+        while ($this->valid()) {
+            $element = new XMLReaderNode($this->reader);
             if ($this->reader->hasValue) {
                 $string = $this->reader->value;
             } else {
                 $string = $element->readString();
             }
-
             if ($this->name) {
                 $array[] = $string;
             } else {
                 $array[$element->name] = $string;
             }
+            $this->moveToNextElementByName($this->name);
         }
 
         return $array;
@@ -1176,8 +1261,21 @@ class XMLElementIterator extends XMLReaderIterator
     /**
      * @param null|string $name
      */
-    public function setName($name = null) {
+    public function setName($name = null)
+    {
         $this->name = '*' === $name ? null : $name;
+    }
+
+    /**
+     * take care the underlying XMLReader is at an element with a fitting name (if $this is looking for a name)
+     */
+    private function ensureCurrentElementState()
+    {
+        if ($this->reader->nodeType !== XMLReader::ELEMENT) {
+            $this->moveToNextElementByName($this->name);
+        } elseif ($this->name && $this->name !== $this->reader->name) {
+            $this->moveToNextElementByName($this->name);
+        }
     }
 }
 

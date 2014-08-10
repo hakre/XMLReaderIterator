@@ -24,6 +24,8 @@
 
 /**
  * Class DOMReadingIteration
+ *
+ * @since 0.1.0
  */
 class DOMReadingIteration extends IteratorIterator
 {

@@ -28,9 +28,28 @@
  */
 class XMLReaderIterator implements Iterator, XMLReaderAggregate
 {
+    /**
+     * @var XMLReader
+     */
     protected $reader;
+
+    /**
+     * @var int
+     */
     private $index;
+
+    /**
+     * stores the result of the last XMLReader::read() operation.
+     *
+     * additionally it's set to true if not initialized (null) on @see XMLReaderIterator::rewind()
+     *
+     * @var bool
+     */
     private $lastRead;
+
+    /**
+     * @var array
+     */
     private $elementStack;
 
     public function __construct(XMLReader $reader)
@@ -70,9 +89,11 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     {
         if (null === self::valid()) {
             self::rewind();
+        } elseif (self::valid()) {
+            self::next();
         }
 
-        while ($this->valid()) {
+        while (self::valid()) {
             if ($this->reader->nodeType === $nodeType) {
                 break;
             }
@@ -93,11 +114,17 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         $this->index = 0;
     }
 
+    /**
+     * @return bool
+     */
     public function valid()
     {
         return $this->lastRead;
     }
 
+    /**
+     * @return XMLReaderNode
+     */
     public function current()
     {
         return new XMLReaderNode($this->reader);
