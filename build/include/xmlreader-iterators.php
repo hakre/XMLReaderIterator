@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.6
+ * @version 0.1.7
  */
 
 /**
@@ -1074,12 +1074,11 @@ class XMLReaderNode implements XMLReaderAggregate
         $nodeType = $reader->nodeType;
         $nodeName = $node->getNodeTypeName();
 
-        $isEmptyElement = $reader->nodeType !== XMLReader::NONE && $reader->isEmptyElement;
-
         $extra = '';
 
         if ($reader->nodeType === XMLReader::ELEMENT) {
             $extra = '<' . $reader->name . '> ';
+            $extra .= sprintf("(isEmptyElement: %s) ", $reader->isEmptyElement ? 'Yes' : 'No');
         }
 
         if ($reader->nodeType === XMLReader::END_ELEMENT) {
@@ -1112,7 +1111,7 @@ class XMLReaderNode implements XMLReaderAggregate
             return $label;
         }
 
-        printf("%s%s(isEmptyElement: %s)\n", str_repeat('  ', $reader->depth), $label, $isEmptyElement ? 'Yes' : 'No');
+        printf("%s%s\n", str_repeat('  ', $reader->depth), $label);
     }
 }
 
@@ -1974,7 +1973,7 @@ class XMLSequenceStream
      */
     public static function clean()
     {
-        self::$readers->close();
+        self::$readers && self::$readers->close();
     }
 
     /**
@@ -2005,7 +2004,12 @@ class XMLSequenceStream
             return true;
         }
 
-        $path = new XMLSequenceStreamPath($path);
+        try {
+            $path = new XMLSequenceStreamPath($path);
+        } catch (UnexpectedValueException $e) {
+            return true;
+        }
+
         $file = $path->getFile();
 
         return !self::$readers->isFileConsumed($file);

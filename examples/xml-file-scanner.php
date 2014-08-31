@@ -29,6 +29,8 @@
 
 require('xmlreader-iterators.php'); // require XMLReaderIterator library
 
+stream_wrapper_register('xmlseq', 'XMLSequenceStream');
+
 $elementsToScan = 5000;
 $timeLimit      = 10;
 $file           = 'data/movies.xml';
@@ -107,76 +109,91 @@ printf(
     "limits: %s elements with %s time-limit\n", $elementsToScan ? : 'all', $timeLimit ? "$timeLimit seconds" : 'no'
 );
 
-$saved  = libxml_use_internal_errors(true);
-$reader = new XMLReader();
-$result = $reader->open($file);
-if (!$result) {
-    echo "unable to open input file.\n";
-    foreach (libxml_get_errors() as $error) {
-        print_r($error);
-    }
-    libxml_use_internal_errors($saved);
-    exit(1);
-}
-
 $indexLimit = (int)max(0, $elementsToScan - 2);
 
 $levels = [];
 
-$start       = microtime(true);
-$lastCount   = 0;
-$lastRuntime = 0;
-
-/** @var XMLChildElementIterator|XMLReaderNode[] $children */
-$children = new XMLChildElementIterator($reader, null, true);
-foreach ($children as $index => $child) {
-    $path  = $children->getNodePath();
-    $level = $reader->depth;
-
-    $runtime = microtime(true) - $start;
-    if ($index % 1000 === 0) {
-        if ($lastRuntime) {
-            $step   = $index - $lastCount;
-            $perSec = $step / ($runtime - $lastRuntime);
-        } else {
-            $perSec = '?';
+do {
+    $saved  = libxml_use_internal_errors(true);
+    $reader = new XMLReader();
+    $result = $reader->open($file);
+    if (!$result) {
+        echo "unable to open input file.\n";
+        foreach (libxml_get_errors() as $error) {
+            print_r($error);
         }
-        printf("\r%05d %' -48s (%.2f secs; %.2f per second)", $index, $path, $runtime, $perSec);
-        $lastCount   = $index;
-        $lastRuntime = $runtime;
+        libxml_use_internal_errors($saved);
+        exit(1);
     }
 
-    $levels || $levels[0][dirname($path)] = 1;
-    isset($levels[$level][$path]) || $levels[$level][$path] = 0;
-    $levels[$level][$path]++;
+    $start       = microtime(true);
+    $lastCount   = 0;
+    $lastRuntime = 0;
+    $messageLastLen = 0;
 
-    if (
-        ($indexLimit && $index > $indexLimit)
-        or ($timeLimit && $runtime > $timeLimit)
-    ) {
-        break;
+    /** @var XMLChildElementIterator|XMLReaderNode[] $children */
+    $children = new XMLChildElementIterator($reader, null, true);
+    foreach ($children as $index => $child) {
+        $path  = $children->getNodePath();
+        $level = $reader->depth;
+
+        $runtime = microtime(true) - $start;
+        if ($index % 1000 === 0) {
+            if ($lastRuntime) {
+                $step   = $index - $lastCount;
+                $perSec = $step / ($runtime - $lastRuntime);
+            } else {
+                $perSec = '?';
+            }
+            $spacer         = '';
+            $message        = sprintf("%05d %' -48s (%.2f secs; %.2f per second)", $index, $path, $runtime, $perSec);
+            ($messageLastLen)
+                && ($need = max(0, $messageLastLen - strlen($message)))
+                && $spacer = str_repeat(' ', $need);
+            ;
+            $messageLastLen = strlen($message);
+
+            echo("\r$message$spacer");
+            $lastCount   = $index;
+            $lastRuntime = $runtime;
+        }
+
+        $index || $levels[0][dirname($path)] = 1;
+        isset($levels[$level][$path]) || $levels[$level][$path] = 0;
+        $levels[$level][$path]++;
+
+        if (
+            ($indexLimit && $index > $indexLimit)
+            or ($timeLimit && $runtime > $timeLimit)
+        ) {
+            break;
+        }
     }
-}
-echo "\n";
+    echo "\n";
 
-isset($index) || $index = -1;
-isset($path) || $path = '(parse error)';
+    isset($index) || $index = -1;
+    isset($path) || $path = '(parse error)';
 
-$summary = sprintf(
-    "scanning done. scanned %d elements in %d seconds. last element was %s.\n", $index + 1,
-    microtime(true) - $start, $path
-);
-
-$errors = libxml_get_errors();
-if ($errors) {
-    printf("had %d parse error(s):\n", count($errors));
-    foreach ($errors as $error) {
-        printf("[level: %d; code: %d; line: %d column: %d]\n%s ", $error->level, $error->code, $error->line, $error->column, $error->message);
+    $summary = sprintf(
+        "scanning done. scanned %d elements in %d seconds. last element was %s.\n", $index + 1,
+        microtime(true) - $start, $path
+    );
+    echo $summary;
+    $errors = libxml_get_errors();
+    if ($errors) {
+        printf("had %d parse error(s):\n", count($errors));
+        foreach ($errors as $error) {
+            printf(
+                "[level: %d; code: %d; line: %d column: %d]\n%s ", $error->level, $error->code, $error->line,
+                $error->column, $error->message
+            );
+        }
     }
-}
-libxml_use_internal_errors($saved);
+    libxml_use_internal_errors($saved);
+} while (substr($file, 0, 9) === 'xmlseq://' && XMLSequenceStream::notAtEndOfSequence($file));
+XMLSequenceStream::clean();
+stream_wrapper_unregister('xmlseq');
 
-echo $summary;
 printf("creating scan summary in %s.\n", $outfile);
 
 class Levels
@@ -305,8 +322,8 @@ class LevelsTree implements RecursiveIterator
     }
 }
 
-$data = new Levels($levels);
-$tree = new LevelsTree($data);
+$data  = new Levels($levels);
+$tree  = new LevelsTree($data);
 $lines = new RecursiveTreeIterator($tree);
 
 if ($outfile === 'php://stdout') {
@@ -316,7 +333,6 @@ if ($outfile === 'php://stdout') {
     }
 } else {
     $out = new SplFileObject($outfile, 'w');
-    $out->fwrite("$summary\n");
     foreach ($lines as $line) {
         $out->fwrite("$line\n");
     }

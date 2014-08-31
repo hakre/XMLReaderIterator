@@ -40,3 +40,4 @@ while (XMLSequenceStream::notAtEndOfSequence($path)) {
 }
 
 XMLSequenceStream::clean();
+stream_wrapper_unregister('xmlseq');

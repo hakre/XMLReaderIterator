@@ -279,12 +279,11 @@ class XMLReaderNode implements XMLReaderAggregate
         $nodeType = $reader->nodeType;
         $nodeName = $node->getNodeTypeName();
 
-        $isEmptyElement = $reader->nodeType !== XMLReader::NONE && $reader->isEmptyElement;
-
         $extra = '';
 
         if ($reader->nodeType === XMLReader::ELEMENT) {
             $extra = '<' . $reader->name . '> ';
+            $extra .= sprintf("(isEmptyElement: %s) ", $reader->isEmptyElement ? 'Yes' : 'No');
         }
 
         if ($reader->nodeType === XMLReader::END_ELEMENT) {
@@ -317,6 +316,6 @@ class XMLReaderNode implements XMLReaderAggregate
             return $label;
         }
 
-        printf("%s%s(isEmptyElement: %s)\n", str_repeat('  ', $reader->depth), $label, $isEmptyElement ? 'Yes' : 'No');
+        printf("%s%s\n", str_repeat('  ', $reader->depth), $label);
     }
 }

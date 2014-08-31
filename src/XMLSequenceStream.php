@@ -64,7 +64,7 @@ class XMLSequenceStream
      */
     public static function clean()
     {
-        self::$readers->close();
+        self::$readers && self::$readers->close();
     }
 
     /**
@@ -95,7 +95,12 @@ class XMLSequenceStream
             return true;
         }
 
-        $path = new XMLSequenceStreamPath($path);
+        try {
+            $path = new XMLSequenceStreamPath($path);
+        } catch (UnexpectedValueException $e) {
+            return true;
+        }
+
         $file = $path->getFile();
 
         return !self::$readers->isFileConsumed($file);
