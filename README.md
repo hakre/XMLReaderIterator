@@ -20,7 +20,7 @@
  - `0.0.23` first try of a compatibility layer for PHP installs with a libxml version below version 2.6.20.
   Functions with compatibility checks are `XMLReaderNode::readOuterXml()` and `XMLReaderNode::readString()`.
 
- - `0.0.21` moved library into mew repository and added `XMLReaderAggregate`.
+ - `0.0.21` moved library into new repository and added `XMLReaderAggregate`.
 
  - `0.0.19` added `XMLElementXpathFilter`, a `FilterIterator` for `XMLReaderIterator` by an Xpath
  expression.
