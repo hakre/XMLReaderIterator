@@ -296,7 +296,7 @@ class XMLReaderNode implements XMLReaderAggregate
             if ($len > 20) {
                 $str = substr($str, 0, 17) . '...';
             }
-            $str   = strtr($str, ["\n" => '\n']);
+            $str   = strtr($str, array("\n" => '\n'));
             $extra = sprintf('%s = (%d) "%s" ', $reader->name, strlen($str), $str);
         }
 
@@ -306,7 +306,7 @@ class XMLReaderNode implements XMLReaderAggregate
             if ($len > 20) {
                 $str = substr($str, 0, 17) . '...';
             }
-            $str   = strtr($str, ["\n" => '\n']);
+            $str   = strtr($str, array("\n" => '\n'));
             $extra = sprintf('(%d) "%s" ', strlen($str), $str);
         }
 
