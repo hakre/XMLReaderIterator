@@ -33,8 +33,8 @@ class XMLElementIterator extends XMLReaderIterator
     private $didRewind;
 
     /**
-     * @param XMLReader   $reader
-     * @param null|string $name element name, leave empty or use '*' for all elements
+     * @param XMLReader $reader
+     * @param null|string $name element localName, leave empty or use '*' for all elements
      */
     public function __construct(XMLReader $reader, $name = null)
     {
@@ -149,10 +149,11 @@ class XMLElementIterator extends XMLReaderIterator
      */
     private function ensureCurrentElementState()
     {
-        if ($this->reader->nodeType !== XMLReader::ELEMENT) {
-            $this->moveToNextElementByName($this->name);
-        } elseif ($this->name && $this->name !== $this->reader->name) {
-            $this->moveToNextElementByName($this->name);
+        if (
+            $this->reader->nodeType !== XMLReader::ELEMENT
+            || ($this->name && $this->name !== $this->reader->localName)
+        ) {
+            $this->moveToNextElementByLocalName($this->name);
         }
     }
 }

@@ -57,6 +57,9 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         $this->reader = $reader;
     }
 
+    /**
+     * @return XMLReader
+     */
     public function getReader()
     {
         return $this->reader;
@@ -65,7 +68,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * @param string $localName (optional) local name of next element node
      *
-     * @return bool|XMLReaderNode
+     * @return null|XMLReaderNode
      */
     public function moveToNextElementByLocalName($localName = null)
     {
@@ -76,9 +79,14 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
             self::next();
         }
 
-        return self::valid() ? self::current() : false;
+        return $this->lastRead ? self::current() : null;
     }
 
+    /**
+     * @param string $name (optional) name of the next element node
+     *
+     * @return null|XMLReaderNode
+     */
     public function moveToNextElementByName($name = null)
     {
         while (self::moveToNextElement()) {
@@ -89,9 +97,12 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         }
         ;
 
-        return self::valid() ? self::current() : false;
+        return $this->lastRead ? self::current() : null;
     }
 
+    /**
+     * @return null|XMLReaderNode
+     */
     public function moveToNextElement()
     {
         return $this->moveToNextByNodeType(XMLReader::ELEMENT);
@@ -100,24 +111,24 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * @param int $nodeType
      *
-     * @return bool|\XMLReaderNode
+     * @return null|\XMLReaderNode
      */
     public function moveToNextByNodeType($nodeType)
     {
-        if (null === self::valid()) {
+        if (null === $this->lastRead) {
             self::rewind();
-        } elseif (self::valid()) {
+        } elseif ($this->lastRead) {
             self::next();
         }
 
-        while (self::valid()) {
+        while ($this->lastRead) {
             if ($this->reader->nodeType === $nodeType) {
                 break;
             }
             self::next();
         }
 
-        return self::valid() ? self::current() : false;
+        return $this->lastRead ? self::current() : null;
     }
 
     public function rewind()
