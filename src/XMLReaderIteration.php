@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2014 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2014, 2015 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -45,9 +45,27 @@ class XMLReaderIteration implements Iterator
      */
     private $index;
 
+    /**
+     * @var bool
+     */
+    private $skipNextRead;
+
     function __construct(XMLReader $reader)
     {
         $this->reader = $reader;
+    }
+
+    /**
+     * skip the next read on next next()
+     *
+     * this is useful of the reader has moved to the next node already inside a foreach iteration and the next
+     * next would move the reader one off.
+     *
+     * @see next
+     */
+    public function skipNextRead()
+    {
+        $this->skipNextRead = true;
     }
 
     /**
@@ -61,7 +79,13 @@ class XMLReaderIteration implements Iterator
     public function next()
     {
         $this->index++;
-        $this->valid = $this->reader->read();
+
+        if ($this->skipNextRead) {
+            $this->skipNextRead = false;
+            $this->valid        = $this->reader->nodeType;
+        } else {
+            $this->valid = $this->reader->read();
+        }
     }
 
     public function key()

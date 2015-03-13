@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2015 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,6 +21,9 @@
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
  */
 
+/**
+ * Class XMLReaderIterationTest
+ */
 class XMLReaderIterationTest extends PHPUnit_Framework_TestCase
 {
     /**
@@ -29,6 +32,9 @@ class XMLReaderIterationTest extends PHPUnit_Framework_TestCase
     public function creation()
     {
         $iterator = new XMLReaderIteration(new XMLReaderStub('<root/>'));
+        $this->assertInstanceOf('XMLReaderIteration', $iterator);
+        $this->assertInstanceOf('Traversable', $iterator);
+        $this->assertInstanceOf('Iterator', $iterator);
     }
 
     /**
@@ -58,5 +64,40 @@ class XMLReaderIterationTest extends PHPUnit_Framework_TestCase
         }
 
         $this->assertSame(4, $count);
+    }
+
+    /**
+     * @test
+     */
+    public function skipNextRead()
+    {
+        $reader   = new XMLReaderStub('<r/>');
+        $iterator = new XMLReaderIteration($reader);
+
+        $key = null;
+
+        foreach ($iterator as $key => $node) {
+            $this->assertEquals('r', $node->name);
+            if ($key >= 6) {
+                break;
+            }
+            $iterator->skipNextRead();
+        }
+
+        $this->assertEquals(6, $key);
+
+        $reader   = new XMLReaderStub('<r><a/><a><b><c/></b></a><a></a><a/></r>');
+        $iterator = new XMLReaderIteration($reader);
+
+        foreach ($iterator as $node) {
+            if ($node->name === 'r') {
+                continue;
+            }
+            $this->assertEquals(XMLReader::ELEMENT, $node->nodeType);
+            $this->assertEquals('a', $node->name);
+
+            $node->next();
+            $iterator->skipNextRead();
+        }
     }
 }

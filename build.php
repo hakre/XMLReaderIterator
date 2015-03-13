@@ -19,8 +19,29 @@ $autoLoadFile = __DIR__ . '/autoload.php';
 ### test if composer.json validates ###
 built_test_composer_validate_json($errors);
 
-### test if a valid version can be obtained from composer.json ###
-$composerVersion = built_test_composer_json_get_version($errors);
+### test if a valid version can be obtained from README.md ###
+$readmeVersion = built_test_readme_get_version($errors);
+built_validate_version($readmeVersion, $errors);
+
+built_test_git_tag($readmeVersion, $errors);
+
+function built_test_git_tag($version, &$errors)
+{
+    echo "INFO: Validating git tag version:";
+
+    $command = "git tag --contains HEAD";
+
+    $target  = 'v' . $version;
+    $tagName = exec($command, $output, $exitCode);
+    $result  = $tagName === $target;
+
+    if (!$result) {
+        printf("\nERROR: git tag '%s' does not match '%s'.\n", $tagName, $target);
+        $errors++;
+    } else {
+        echo " ", $tagName, ".\n";
+    }
+}
 
 ### test if autoload.php contains all classes ###
 build_test_autoload_file($errors, $autoLoadFile);
@@ -38,7 +59,7 @@ if ($errors) {
 build_make_clean($errors, $buildDir, $concatenateDir);
 
 ### create concatenateFile ###
-build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile, $composerVersion);
+build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile, $readmeVersion);
 copy_file_to_dir('README.md', $concatenateDir);
 
 ### conditional build target into gist ###
@@ -58,27 +79,43 @@ if ($errors) {
  *
  * @return string|null
  */
-function built_test_composer_json_get_version(&$errors)
+function built_test_readme_get_version(&$errors)
 {
-    $file    = 'composer.json';
-    $data    = json_decode_file($file, true);
-    $version = isset($data['version']) ? $data['version'] : null;
+    $file    = 'README.md';
+    $data    = file($file);
+    $version =  null;
+
+    foreach ($data as $index => $line )  {
+        if ($line === "### Changelog:\n") {
+            $version = preg_match('~`(\d\.\d\.\d)`~', $data[$index + 2], $m) ? $m[1] : null;
+        }
+        if ($index > 10) {
+            break;
+        }
+    }
+
     if (!strlen($version)) {
-        echo "ERROR: Unable to obtain version from composer.json.\n";
+        echo "ERROR: Unable to obtain version from README.md.\n";
         $errors++;
         return null;
     }
 
-    echo "INFO: composer.json version is $version.\n";
-
-    if (!preg_match('~^\d.\d.\d$~', $version)) {
-        echo "ERROR: Unable to validate version '$version'.\n";
-        $errors++;
-        return null;
-    }
+    echo "INFO: README.md version is $version.\n";
 
     return $version;
 }
+
+function built_validate_version($version, &$errors)
+{
+    if (!preg_match('~^\d.\d.\d$~', $version)) {
+        echo "ERROR: Unable to validate version '$version'.\n";
+        $errors++;
+        return false;
+    }
+
+    return true;
+}
+
 
 /**
  * @see http://php.net/json_decode
@@ -108,7 +145,7 @@ function built_test_composer_validate_json(&$errors)
 
     $lastline = exec($command, $output, $exitCode);
     list($versionLine) = $output;
-    if (!preg_match('~^Composer version [0-9a-f]{40} 2\d{3}-(?:0\d|1[0-2])-(?:[0-2]\d|3[0-1]) (?:[0-1]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)$~', $versionLine)) {
+    if (!preg_match('~^Composer version (?:1.0-dev \([0-9a-f]{40}\)|[0-9a-f]{40}) 2\d{3}-(?:0\d|1[0-2])-(?:[0-2]\d|3[0-1]) (?:[0-1]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)$~', $versionLine)) {
         echo "ERROR: Unable to invoke Composer.\n";
         $errors++;
         return;

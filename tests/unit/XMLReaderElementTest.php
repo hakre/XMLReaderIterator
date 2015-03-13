@@ -21,6 +21,9 @@
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
  */
 
+/**
+ * Class XMLReaderElementTest
+ */
 class XMLReaderElementTest extends PHPUnit_Framework_TestCase
 {
     /**

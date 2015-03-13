@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.7
+ * @version 0.1.8
  */
 
 /**
@@ -451,9 +451,27 @@ class XMLReaderIteration implements Iterator
      */
     private $index;
 
+    /**
+     * @var bool
+     */
+    private $skipNextRead;
+
     function __construct(XMLReader $reader)
     {
         $this->reader = $reader;
+    }
+
+    /**
+     * skip the next read on next next()
+     *
+     * this is useful of the reader has moved to the next node already inside a foreach iteration and the next
+     * next would move the reader one off.
+     *
+     * @see next
+     */
+    public function skipNextRead()
+    {
+        $this->skipNextRead = true;
     }
 
     /**
@@ -467,7 +485,13 @@ class XMLReaderIteration implements Iterator
     public function next()
     {
         $this->index++;
-        $this->valid = $this->reader->read();
+
+        if ($this->skipNextRead) {
+            $this->skipNextRead = false;
+            $this->valid        = $this->reader->nodeType;
+        } else {
+            $this->valid = $this->reader->read();
+        }
     }
 
     public function key()
@@ -1091,7 +1115,7 @@ class XMLReaderNode implements XMLReaderAggregate
             if ($len > 20) {
                 $str = substr($str, 0, 17) . '...';
             }
-            $str   = strtr($str, ["\n" => '\n']);
+            $str   = strtr($str, array("\n" => '\n'));
             $extra = sprintf('%s = (%d) "%s" ', $reader->name, strlen($str), $str);
         }
 
@@ -1101,7 +1125,7 @@ class XMLReaderNode implements XMLReaderAggregate
             if ($len > 20) {
                 $str = substr($str, 0, 17) . '...';
             }
-            $str   = strtr($str, ["\n" => '\n']);
+            $str   = strtr($str, array("\n" => '\n'));
             $extra = sprintf('(%d) "%s" ', strlen($str), $str);
         }
 

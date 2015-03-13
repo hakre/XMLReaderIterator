@@ -1,5 +1,4 @@
 <?php
-
 /*
  * This file is part of the XMLReaderIterator package.
  *
@@ -22,6 +21,9 @@
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
  */
 
+/**
+ * Class XMLReaderTest
+ */
 class XMLReaderTest extends PHPUnit_Framework_TestCase
 {
     /**

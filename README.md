@@ -2,6 +2,8 @@
 
 ### Changelog:
 
+ - `0.1.8` maintenance release with fixes.
+
  - `0.1.7` maintenance release with fixes.
 
  - `0.1.6` maintenance release with fixes. added xml-file-scanner command-line tool example.
@@ -20,7 +22,7 @@
  - `0.0.23` first try of a compatibility layer for PHP installs with a libxml version below version 2.6.20.
   Functions with compatibility checks are `XMLReaderNode::readOuterXml()` and `XMLReaderNode::readString()`.
 
- - `0.0.21` moved library into mew repository and added `XMLReaderAggregate`.
+ - `0.0.21` moved library into new repository and added `XMLReaderAggregate`.
 
  - `0.0.19` added `XMLElementXpathFilter`, a `FilterIterator` for `XMLReaderIterator` by an Xpath
  expression.
@@ -34,7 +36,7 @@
             echo " * ",  $message->readString(), "\n";
         }
 
-### Code examples for the XMLReader Iterators (latests on top):
+### Code examples for the XMLReader Iterators (latest on top):
 
 - [How to distinguish between empty element and null-size string in DOMDocument?](http://stackoverflow.com/a/24109776/367456)
 - [PHP XML parser: How to read only part of the XML document?](http://stackoverflow.com/a/15443517/367456)
