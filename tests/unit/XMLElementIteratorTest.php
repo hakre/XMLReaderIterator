@@ -1,4 +1,5 @@
 <?php
+
 /*
  * This file is part of the XMLReaderIterator package.
  *
@@ -89,6 +90,33 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $it->valid());
         $current = $it->current();
         $this->assertEquals(null, $current);
+
+    }
+
+    /** @test */
+    public function localNameIteration()
+    {
+        $reader = new XMLReaderStub('<!-- -->
+        <root xmlns:name="space:1">
+            <foo>
+                <name:bar id="1"/>
+                <foo/>
+                <bar id="2"/>
+            </foo>
+        </root>');
+
+        $localName = 'bar';
+
+        $it = new XMLElementIterator($reader, $localName);
+
+        $it->rewind();
+        $this->assertSame($localName, $reader->localName, 'local-name');
+        $this->assertSame("name", $reader->prefix, 'prefix');
+        $this->assertSame("name:$localName", $reader->name, 'name');
+        $this->assertSame("space:1", $reader->namespaceURI, 'namespace-uri');
+
+        $it->next();
+        $this->assertSame($localName, $reader->name);
 
     }
 

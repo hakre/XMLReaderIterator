@@ -62,6 +62,23 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         return $this->reader;
     }
 
+    /**
+     * @param string $localName (optional) local name of next element node
+     *
+     * @return bool|XMLReaderNode
+     */
+    public function moveToNextElementByLocalName($localName = null)
+    {
+        while (self::moveToNextElement()) {
+            if (!$localName || $localName === $this->reader->localName) {
+                break;
+            }
+            self::next();
+        }
+
+        return self::valid() ? self::current() : false;
+    }
+
     public function moveToNextElementByName($name = null)
     {
         while (self::moveToNextElement()) {
