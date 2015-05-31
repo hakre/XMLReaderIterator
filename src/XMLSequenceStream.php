@@ -28,6 +28,7 @@
  */
 class XMLSequenceStream
 {
+    const DECL_POS_PATTERN = '(<\?xml\s+version\s*=\s*(["\'])(1\.\d+)\1(?:\s*\?>|\s+encoding\s*=\s*(["\'])(((?!\3).)*)\3))';
     /**
      * @var resource
      */
@@ -201,8 +202,7 @@ class XMLSequenceStream
 
     private function declPos($offset = 0)
     {
-        $declPattern = '(<\?xml\s+version\s*=\s*(["\'])(1\.\d+)\1\s+encoding\s*=\s*(["\'])(((?!\3).)*)\3)';
-        $result      = preg_match($declPattern, $this->reader->buffer, $matches, PREG_OFFSET_CAPTURE, $offset);
+        $result      = preg_match(self::DECL_POS_PATTERN, $this->reader->buffer, $matches, PREG_OFFSET_CAPTURE, $offset);
         if ($result === FALSE) {
             throw new UnexpectedValueException('Regex failed.');
         }

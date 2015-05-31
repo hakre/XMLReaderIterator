@@ -3,6 +3,11 @@
          colors="false"
          bootstrap="tests/bootstrap.php"
         >
+    <testsuites>
+        <testsuite name="default">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
     <filter>
         <whitelist>
             <directory>./src/</directory>

@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2015 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,18 +26,42 @@
  */
 class XMLReaderNode implements XMLReaderAggregate
 {
-    public $name;
+    /** @var XMLReader */
     private $reader;
+
+    /** @var int */
     private $nodeType;
-    private $string;
-    private $attributes;
+
+    /** @var string */
+    private $name;
+
+    /** @var string */
+    private $localName;
+
+    /**
+     * cache for expansion into SimpleXMLElement
+     *
+     * @var null|SimpleXMLElement
+     * @see asSimpleXML
+     */
     private $simpleXML;
+
+    /**
+     * cache for XMLAttributeIterator
+     *
+     * @var null|XMLAttributeIterator
+     * @see getAttributes
+     */
+    private $attributes;
+
+    /** @var null|string  */
+    private $string;
 
     public function __construct(XMLReader $reader)
     {
-        $this->reader         = $reader;
-        $this->nodeType       = $reader->nodeType;
-        $this->name           = $reader->name;
+        $this->reader   = $reader;
+        $this->nodeType = $reader->nodeType;
+        $this->name     = $reader->name;
     }
 
     public function __toString()
@@ -57,13 +81,12 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     public function getSimpleXMLElement()
     {
-        if (null === $this->simpleXML)
-        {
+        if (null === $this->simpleXML) {
             if ($this->reader->nodeType !== XMLReader::ELEMENT) {
                 return null;
             }
 
-            $node = $this->getDocumentNode();
+            $node            = $this->expand();
             $this->simpleXML = simplexml_import_dom($node);
         }
 
@@ -78,6 +101,7 @@ class XMLReaderNode implements XMLReaderAggregate
     public function asSimpleXML()
     {
         trigger_error('Deprecated ' . __METHOD__ . '() - use getSimpleXMLElement() in the future', E_USER_NOTICE);
+
         return $this->getSimpleXMLElement();
     }
 
@@ -125,9 +149,20 @@ class XMLReaderNode implements XMLReaderAggregate
         return new XMLChildIterator($this->reader);
     }
 
+    /**
+     * @return string name
+     */
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * @return string local name
+     */
+    public function getLocalName()
+    {
+        return $this->localName;
     }
 
     public function getReader()
@@ -152,18 +187,13 @@ class XMLReaderNode implements XMLReaderAggregate
             return '';
         }
 
-        $node = $this->getDocumentNode();
+        $doc = new DOMDocument();
 
-        /**
-         * FIXME this var hint is un-necessary
-         *
-         * @link http://youtrack.jetbrains.com/issue/WI-23810
-         *
-         * @var $doc DOMDocument
-         */
-        $doc  = $node->ownerDocument;
-        $doc->formatOutput = true;
-        $node = $doc->appendChild($node);
+        $doc->preserveWhiteSpace = false;
+        $doc->formatOutput       = true;
+
+        $node = $this->expand($doc);
+
         return $doc->saveXML($node);
     }
 
@@ -174,16 +204,28 @@ class XMLReaderNode implements XMLReaderAggregate
      * or getting a SimpleXMLElement out of it @see getSimpleXMLElement
      *
      * @throws BadMethodCallException
-     *
+     * @param DOMNode $basenode
      * @return DOMNode
      */
-    private function getDocumentNode() {
-        if (false === $node = $this->reader->expand()) {
+    public function expand(DOMNode $basenode = null)
+    {
+        if (null === $basenode) {
+            $basenode = new DomDocument();
+        }
+
+        if ($basenode instanceof DOMDocument) {
+            $doc = $basenode;
+        } else {
+            $doc = $basenode->ownerDocument;
+        }
+
+        if (false === $node = $this->reader->expand($basenode)) {
             throw new BadMethodCallException('Unable to expand node.');
         }
 
-        $doc  = new DomDocument();
-        $node = $doc->importNode($node, true);
+        if ($node->ownerDocument !== $doc) {
+            $node = $doc->importNode($node, true);
+        }
 
         return $node;
     }
@@ -270,7 +312,7 @@ class XMLReaderNode implements XMLReaderAggregate
      *
      * @param XMLReader $reader
      * @param bool $return (optional) prints by default but can return string
-     * @return string
+     * @return string|null
      */
     public static function dump(XMLReader $reader, $return = FALSE)
     {
@@ -317,5 +359,7 @@ class XMLReaderNode implements XMLReaderAggregate
         }
 
         printf("%s%s\n", str_repeat('  ', $reader->depth), $label);
+
+        return null;
     }
 }

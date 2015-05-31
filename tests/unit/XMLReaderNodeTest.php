@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2014 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2014, 2015 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@
 /**
  * Class XMLReaderNodeTest
  */
-class XMLReaderNodeTest extends PHPUnit_Framework_TestCase
+class XMLReaderNodeTest extends XMLReaderTestCase
 {
     /**
      * some XMLReaderNode can not be turned into a SimpleXMLElement, this tests how robust XMLReaderNode
@@ -53,5 +53,51 @@ class XMLReaderNodeTest extends PHPUnit_Framework_TestCase
         $node = new XMLReaderNode($reader);
         $sxml = $node->getSimpleXMLElement();
         $this->assertNull($sxml);
+    }
+
+    /**
+     * @test
+     */
+    function expand()
+    {
+        $reader = new XMLReaderStub('<products>
+            <!--suppress HtmlUnknownAttribute -->
+            <product category="Desktop">
+                <name> Desktop 1 (d)</name>
+                <price>499.99</price>
+            </product>
+            <!--suppress HtmlUnknownAttribute -->
+            <product category="Tablet">
+                <name>Tablet 1 (t)</name>
+                <price>1099.99</price>
+            </product>
+        </products>');
+
+        $products = new XMLElementIterator($reader, 'product');
+        $doc      = new DOMDocument;
+        $xpath    = new DOMXpath($doc);
+        foreach ($products as $product) {
+            $node = $product->expand($doc);
+            $this->assertInstanceOf('DOMNode', $node);
+            $this->assertSame($node->ownerDocument, $doc);
+            $this->assertEquals('product', $xpath->evaluate('local-name(.)', $node));
+            $this->addToAssertionCount(1);
+        }
+        $this->assertGreaterThan(0, $previous = $this->getNumAssertions());
+
+        unset($doc);
+        $reader->rewind();
+        foreach ($products as $product) {
+            $node = $product->expand();
+            $this->assertInstanceOf('DOMNode', $node);
+            $this->assertInstanceOf('DOMDocument', $node->ownerDocument);
+            $doc   = $node->ownerDocument;
+            $xpath = new DOMXpath($doc);
+            $this->assertSame($node->ownerDocument, $doc);
+            $this->assertEquals('product', $xpath->evaluate('local-name(.)', $node));
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertGreaterThan($previous, $this->getNumAssertions());
     }
 }

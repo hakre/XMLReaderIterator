@@ -21,16 +21,19 @@
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
  */
 
-class ExamplesTest extends \PHPUnit_Framework_TestCase
+class ExamplesTest extends XMLReaderTestCase
 {
     /**
      * @param $file
-     * @dataProvider exampleFiles
+     *
+     * @dataProvider provideExampleFiles
+     *
      * @test
      */
     public function runPhpFile($file) {
         $name = basename($file, '.php');
 
+        $buffer = null;
         try {
             $this->addToAssertionCount(1);
             ob_start();
@@ -60,41 +63,19 @@ class ExamplesTest extends \PHPUnit_Framework_TestCase
         $name = basename($forFile);
         $name = strtr($name, '.', '_');
         $file = __DIR__ . '/Expectations/' . $name . '.out';
+
         return $file;
     }
 
-    // TODO remove not needed any longer.
-    private function getExpectedBuffer($forFile)
+    /**
+     * @return array
+     *
+     * @see runPhpFile
+     */
+    public function provideExampleFiles()
     {
-        $file = $this->getExpectedFile($forFile);
-        if (!is_readable($file)) {
-            throw new RuntimeException(sprintf('Not a readable file for %s (%s)', $name, $forFile));
-        }
+        $path = __DIR__ . '/../../../examples';
 
-        $buffer  = file_get_contents($file);
-        if ($buffer === false) {
-            throw new RuntimeException(sprintf('Failed to aquire expected buffer for %s (%s)', $name, $forFile));
-        }
-        return $buffer;
-    }
-
-
-    public function exampleFiles() {
-        $parameters = array();
-
-        $examplePath = $this->getExamplesPath();
-        $dir = new DirectoryIterator($examplePath);
-        foreach($dir as $file) {
-            /* @var $file DirectoryIterator */
-            if (!$file->isFile()) continue;
-            if (!preg_match('~^(?!xmlreader-iterators)[^.]+\.php$~', $file->getBasename())) continue;
-            $parameters[] = array($file->getRealPath());
-        }
-
-        return $parameters;
-    }
-
-    private function getExamplesPath() {
-        return __DIR__ . '/../../../examples';
+        return $this->addFiles(array(), $path, '~^(?!xmlreader-iterators)[^.]+\.php$~');
     }
 }

@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2014 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2014, 2015 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@
 /**
  * Class XMLReaderTest
  */
-class XMLReaderTest extends PHPUnit_Framework_TestCase
+class XMLReaderTest extends XMLReaderTestCase
 {
     /**
      * @test
@@ -85,17 +85,6 @@ class XMLReaderTest extends PHPUnit_Framework_TestCase
 
         $path   = __DIR__ . '/../../examples/data';
         $result = $this->addXmlFiles($result, $path);
-
-        return $result;
-    }
-
-    private function addXmlFiles(array $result, $path)
-    {
-        /** @var FilesystemIterator|SplFileInfo[] $dir */
-        $dir = new FilesystemIterator($path);
-        foreach ($dir as $file) {
-            $file->getExtension() === 'xml' && $result[] = array((string)$file);
-        }
 
         return $result;
     }

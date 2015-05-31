@@ -2,6 +2,8 @@
 
 ### Changelog:
 
+ - `0.1.9` maintenance release with fixes. added XMLReaderNode::expand().
+
  - `0.1.8` maintenance release with fixes.
 
  - `0.1.7` maintenance release with fixes.

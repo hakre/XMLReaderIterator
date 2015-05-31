@@ -114,7 +114,7 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
     function iterateOverNamedElements()
     {
         $reader = new XMLReaderStub('<r><a>1</a><a>2</a><b>c</b><a>3</a></r>');
-        $it = new XMLElementIterator($reader, 'a');
+        $it     = new XMLElementIterator($reader, 'a');
 
         $this->assertEquals(null, $it->valid());
         $it->rewind();
