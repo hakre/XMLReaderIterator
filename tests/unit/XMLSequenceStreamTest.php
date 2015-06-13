@@ -72,7 +72,7 @@ class XMLSequenceStreamTest extends XMLReaderTestCase
      */
     public function readStream($file)
     {
-        stream_wrapper_register('xmlseq', 'XMLSequenceStream');
+        $this->registerXMLSequenceStream();
         $path = "xmlseq://" . $file;
 
         $count = 0;
@@ -87,7 +87,25 @@ class XMLSequenceStreamTest extends XMLReaderTestCase
         }
 
         XMLSequenceStream::clean();
-        stream_wrapper_unregister('xmlseq');
+        $this->unRegisterXMLSequenceStream();
         $this->assertGreaterThanOrEqual(2, $count, 'number of sequences');
+    }
+
+    /**
+     * Register the wrapper for the stream
+     */
+    protected function registerXMLSequenceStream() {
+        if(!in_array('xmlseq', stream_get_wrappers())) {
+            stream_wrapper_register('xmlseq', 'XMLSequenceStream');
+        }
+    }
+
+    /**
+     * De-register the wrapper for the stream
+     */
+    protected function unRegisterXMLSequenceStream() {
+        if(in_array('xmlseq', stream_get_wrappers())) {
+            stream_wrapper_unregister('xmlseq');
+        }
     }
 }
