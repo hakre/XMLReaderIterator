@@ -77,7 +77,13 @@ final class BufferedFileRead
             return false;
         }
 
-        $handle = fopen($filename, 'rb', $use_include_path, $context);
+        // php 5.3.3 compatibility
+        if($context != null) {
+            $handle = fopen($filename, 'rb', $use_include_path, $context);
+        } else {
+            $handle = fopen($filename, 'rb', $use_include_path);
+        }
+
         if (!$handle) {
             return false;
         }
