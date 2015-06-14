@@ -111,7 +111,7 @@ printf(
 
 $indexLimit = (int)max(0, $elementsToScan - 2);
 
-$levels = [];
+$levels = array();
 
 do {
     $saved  = libxml_use_internal_errors(true);
@@ -207,7 +207,7 @@ class Levels
 
     public function getChildrenOfAtLevel($prefix, $level)
     {
-        $children = [];
+        $children = array();
 
         if (isset($this->levels[$level])) {
             foreach ($this->levels[$level] as $path => $count) {
