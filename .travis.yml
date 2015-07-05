@@ -1,6 +1,7 @@
 language: php
 
 php:
+  - 5.2
   - 5.3
   - 5.4
   - 5.5
@@ -10,17 +11,12 @@ php:
 
 matrix:
   allow_failures:
+    - php: 5.2
     - php: nightly
     - php: hhvm
-
-before_install:
-  - travis_retry composer self-update
-
-install:
-  - travis_retry composer install --prefer-source --no-interaction --ignore-platform-reqs
 
 before_script:
   - ./build.sh
 
 script:
-  - vendor/bin/phpunit --debug --stop-on-error --stop-on-failure
+  - phpunit --coverage-text tests
