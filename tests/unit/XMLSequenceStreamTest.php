@@ -48,7 +48,7 @@ class XMLSequenceStreamTest extends XMLReaderTestCase
      */
     public function provideStreamFiles()
     {
-        return $this->addXmlFiles(array(), __DIR__ . '/../fixtures/streams');
+        return $this->addXmlFiles(array(), dirname(__FILE__) . '/../fixtures/streams');
     }
 
     /**

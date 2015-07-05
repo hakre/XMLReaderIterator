@@ -49,6 +49,6 @@ class XMLElementXpathFilter extends XMLReaderFilterBase
             return false;
         }
 
-        return !($result[0]->children()->count());
+        return !(count($result[0]->children()));
     }
 }

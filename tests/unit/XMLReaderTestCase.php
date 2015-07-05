@@ -63,8 +63,8 @@ class XMLReaderTestCase extends PHPUnit_Framework_TestCase
      */
     protected function addFiles(array $result, $path, $pattern)
     {
-        /** @var FilesystemIterator|SplFileInfo[] $dir */
-        $dir = new FilesystemIterator($path);
+        /** @var DirectoryIterator|SplFileInfo[] $dir */
+        $dir = new DirectoryIterator($path);
         foreach ($dir as $file) {
             if (!$file->isFile()) {
                 continue;
@@ -73,7 +73,7 @@ class XMLReaderTestCase extends PHPUnit_Framework_TestCase
                 continue;
             }
 
-            $result[] = array((string) $file);
+            $result[] = array($path . '/' . $file);
         }
 
         return $result;

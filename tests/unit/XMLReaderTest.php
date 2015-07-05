@@ -84,10 +84,10 @@ class XMLReaderTest extends XMLReaderTestCase
     {
         $result = array();
 
-        $path   = __DIR__ . '/../fixtures';
+        $path   = dirname(__FILE__) . '/../fixtures';
         $result = $this->addXmlFiles($result, $path);
 
-        $path   = __DIR__ . '/../../examples/data';
+        $path   = dirname(__FILE__) . '/../../examples/data';
         $result = $this->addXmlFiles($result, $path);
 
         return $result;

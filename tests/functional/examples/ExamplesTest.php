@@ -83,7 +83,7 @@ class ExamplesTest extends XMLReaderTestCase
     private function getExpectedFile($forFile) {
         $name = basename($forFile);
         $name = strtr($name, '.', '_');
-        $file = __DIR__ . '/Expectations/' . $name . '.out';
+        $file = dirname(__FILE__) . '/Expectations/' . $name . '.out';
 
         return $file;
     }
@@ -95,7 +95,7 @@ class ExamplesTest extends XMLReaderTestCase
      */
     public function provideExampleFiles()
     {
-        $path = __DIR__ . '/../../../examples';
+        $path = dirname(__FILE__) . '/../../../examples';
 
         return $this->addFiles(array(), $path, '~^(?!xmlreader-iterators)[^.]+\.php$~');
     }

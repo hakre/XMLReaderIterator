@@ -2,12 +2,12 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013, 2014 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2014, 2015 hakre <http://hakre.wordpress.com>
  *
  * auto-load / bootstrap (the file-name as common as it is might be little misleading here so far)
  */
 
-$xmlReaderIterator_libPath = __DIR__ . '/src';
+$xmlReaderIterator_libPath = dirname(__FILE__) . '/src';
 
 require $xmlReaderIterator_libPath . '/XMLReaderAggregate.php';
 require $xmlReaderIterator_libPath . '/XMLBuild.php';

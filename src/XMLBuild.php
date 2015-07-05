@@ -66,7 +66,7 @@ abstract class XMLBuild
     public static function startTag($name, $attributes, $emptyTag = false)
     {
         $buffer = '<' . $name;
-        $buffer .= static::attributes($attributes);
+        $buffer .= self::attributes($attributes);
         $buffer .= $emptyTag ? '/>' : '>';
 
         return $buffer;
@@ -82,7 +82,7 @@ abstract class XMLBuild
         $buffer = '';
 
         foreach ($attributes as $name => $value) {
-            $buffer .= ' ' . $name . '="' . static::attributeValue($value) . '"';
+            $buffer .= ' ' . $name . '="' . self::attributeValue($value) . '"';
         }
 
         return $buffer;

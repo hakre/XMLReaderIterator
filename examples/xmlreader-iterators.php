@@ -7,4 +7,4 @@
  * Only a stub to include the XMLReaderIterator library in the examples.
  */
 
-require_once(__DIR__ . '/../autoload.php'); // require XMLReaderIterator library from sources
+require_once(dirname(__FILE__) . '/../autoload.php'); // require XMLReaderIterator library from sources

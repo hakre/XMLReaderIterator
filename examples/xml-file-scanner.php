@@ -29,6 +29,11 @@
 
 require('xmlreader-iterators.php'); // require XMLReaderIterator library
 
+// if example is run as test, skip it if RecursiveTreeIterator is not available
+if (isset($this) && $this instanceof PHPUnit_Framework_TestCase && !class_exists('RecursiveTreeIterator')) {
+    $this->markTestSkipped('Class RecursiveTreeIterator does not exists.');
+}
+
 stream_wrapper_register('xmlseq', 'XMLSequenceStream');
 
 $elementsToScan = 5000;
@@ -106,7 +111,7 @@ $timeLimit = (int)max(0, $timeLimit);
 printf("input.: %s\n", $file);
 printf("output: %s\n", $outfile);
 printf(
-    "limits: %s elements with %s time-limit\n", $elementsToScan ? : 'all', $timeLimit ? "$timeLimit seconds" : 'no'
+    "limits: %s elements with %s time-limit\n", $elementsToScan ? $elementsToScan : 'all', $timeLimit ? "$timeLimit seconds" : 'no'
 );
 
 $indexLimit = (int)max(0, $elementsToScan - 2);

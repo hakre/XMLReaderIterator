@@ -7,7 +7,7 @@
  * bootstrap for tests
  */
 
-require_once(__DIR__ . '/../autoload.php');
+require_once(dirname(__FILE__) . '/../autoload.php');
 
-require_once(__DIR__ . '/unit/XMLReaderStub.php');
-require_once(__DIR__ . '/unit/XMLReaderTestCase.php');
+require_once(dirname(__FILE__) . '/unit/XMLReaderStub.php');
+require_once(dirname(__FILE__) . '/unit/XMLReaderTestCase.php');

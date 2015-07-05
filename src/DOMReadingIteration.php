@@ -107,12 +107,13 @@ class DOMReadingIteration extends IteratorIterator
                 $prefix = $this->reader->prefix;
                 /* @var $node DOMElement */
                 if ($prefix) {
-                    $uri = $parent->lookupNamespaceURI($prefix) ?: $this->nsUriSelfLookup($prefix);
+                    $lookupNamespaceURI = $parent->lookupNamespaceURI($prefix);
+                    $uri = $lookupNamespaceURI ? $lookupNamespaceURI : $this->nsUriSelfLookup($prefix);
                     if ($uri === NULL) {
                         trigger_error(sprintf('Unable to lookup NS URI for element prefix "%s"', $prefix));
                     }
                     /* @var $doc DOMDocument */
-                    $doc  = ($parent->ownerDocument?:$parent);
+                    $doc  = ($parent->ownerDocument ? $parent->ownerDocument : $parent);
                     $node = $doc->createElementNS($uri, $this->reader->name);
                     $node = $parent->appendChild($node);
                 } else {
@@ -133,7 +134,8 @@ class DOMReadingIteration extends IteratorIterator
                         if ($prefix === self::XMLNS) {
                             $node->setAttributeNS('http://www.w3.org/2000/xmlns/', $this->reader->name, $this->reader->value);
                         } elseif ($prefix) {
-                            $uri = $parent->lookupNamespaceUri($prefix) ?: @$nsUris[$prefix];
+                            $lookupNamespaceUri = $parent->lookupNamespaceUri($prefix);
+                            $uri = $lookupNamespaceUri ? $lookupNamespaceUri : @$nsUris[$prefix];
                             if ($uri === NULL) {
                                 trigger_error(sprintf('Unable to lookup NS URI for attribute prefix "%s"', $prefix));
                             }
