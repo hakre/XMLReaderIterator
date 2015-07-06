@@ -75,7 +75,6 @@ class XMLChildElementIteratorTest extends PHPUnit_Framework_TestCase
         $root = $base->current();
         $this->assertEquals('root', $root->getName());
 
-        $index = 0;
         $count = 0;
         foreach($root->getChildElements() as $index => $child) {
             $this->assertSame($count++, $index);
@@ -89,7 +88,6 @@ class XMLChildElementIteratorTest extends PHPUnit_Framework_TestCase
         $root = $base->current();
         $this->assertEquals('root', $root->getName());
 
-        $index = 0;
         $count = 0;
         foreach($root->getChildElements(null, true) as $index => $child) {
             $this->assertSame($count++, $index);

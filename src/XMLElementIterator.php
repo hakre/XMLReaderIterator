@@ -25,6 +25,8 @@
  * Class XMLElementIterator
  *
  * Iterate over XMLReader element nodes
+ *
+ * @method string readString() inherited from IteratorIterator decoration of XMLReader
  */
 class XMLElementIterator extends XMLReaderIterator
 {
@@ -122,6 +124,11 @@ class XMLElementIterator extends XMLReaderIterator
 
     /**
      * decorate method calls
+     *
+     * @param string $name
+     * @param array  $args
+     *
+     * @return mixed
      */
     public function __call($name, $args)
     {
@@ -130,6 +137,10 @@ class XMLElementIterator extends XMLReaderIterator
 
     /**
      * decorate property get
+     *
+     * @param string $name
+     *
+     * @return string
      */
     public function __get($name)
     {

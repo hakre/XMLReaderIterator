@@ -28,6 +28,7 @@
  */
 final class BufferedFileRead
 {
+    const MODE_READ_BINARY = 'rb';
     /**
      * @var string
      */
@@ -70,14 +71,21 @@ final class BufferedFileRead
      */
     public function fopen($filename, $mode, $use_include_path = null, $context = null) {
 
-        if ($mode !== 'rb') {
-            trigger_error(
-                sprintf("unsupported mode '%s', only 'rb' is supported for buffered file read", $mode)
+        if ($mode !== self::MODE_READ_BINARY) {
+            $message = sprintf(
+                "unsupported mode '%s', only '%s' is supported for buffered file read", $mode, self::MODE_READ_BINARY
             );
+            trigger_error($message);
+
             return false;
         }
 
-        $handle = fopen($filename, 'rb', $use_include_path, $context);
+        if ($context === null) {
+            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path);
+        } else {
+            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path, $context);
+        }
+
         if (!$handle) {
             return false;
         }

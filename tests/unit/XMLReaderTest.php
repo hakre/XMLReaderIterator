@@ -29,10 +29,12 @@ class XMLReaderTest extends XMLReaderTestCase
     /**
      * @test
      * @dataProvider provideAllFiles
+     *
+     * @param string $xml
      */
-    function readBehavior($file)
+    function readBehavior($xml)
     {
-        $reader = new XMLReaderStub($file);
+        $reader = new XMLReaderStub($xml);
 
         $it       = new XMLReaderIterator($reader);
         $expected = array();
@@ -52,10 +54,12 @@ class XMLReaderTest extends XMLReaderTestCase
     /**
      * @test
      * @dataProvider provideAllFiles
+     *
+     * @param string $xml
      */
-    function nextBehavior($file)
+    function nextBehavior($xml)
     {
-        $reader = new XMLReaderStub($file);
+        $reader = new XMLReaderStub($xml);
 
         $it       = new XMLReaderNextIteration($reader);
         $expected = array();

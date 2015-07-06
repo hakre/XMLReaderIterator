@@ -45,7 +45,7 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
     {
         $reader = new XMLReaderStub('<root><b>has</b></root>');
 
-        /** @var XMLElementIterator|XMLReaderNode[] $it */
+        /** @var XMLElementIterator|XMLReaderNode[]|XMLReader $it */
         $it = new XMLElementIterator($reader);
 
         $it->rewind();

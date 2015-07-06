@@ -23,12 +23,30 @@
 
 class ExamplesTest extends XMLReaderTestCase
 {
+    private $cwd;
+
+    protected function setUp()
+    {
+        $this->cwd = getcwd();
+        parent::setUp();
+    }
+
+    protected function tearDown()
+    {
+        chdir($this->cwd);
+        parent::tearDown();
+    }
+
+
     /**
+     * @test
+     *
      * @param $file
      *
-     * @dataProvider provideExampleFiles
+     * @throws Exception
+     * @throws PHPUnit_Framework_SkippedTest
      *
-     * @test
+     * @dataProvider provideExampleFiles
      */
     public function runPhpFile($file) {
         $name = basename($file, '.php');
@@ -38,21 +56,24 @@ class ExamplesTest extends XMLReaderTestCase
             $this->addToAssertionCount(1);
             ob_start();
             {
-                $cwd = getcwd();
                 chdir(dirname($file));
-                {
-                    $this->saveInclude($file);
-                }
-                chdir($cwd);
-                unset($cwd);
+                $this->saveInclude($file);
             }
             $buffer = ob_get_clean();
+        } catch(PHPUnit_Framework_SkippedTest $e) {
+            throw $e;
         } catch(Exception $e) {
             $this->fail(sprintf('Example %s did throw an exception %s with message %s.', $name, get_class($e), $e->getMessage()));
         }
 
         $expectedFile = $this->getExpectedFile($file);
-        $this->assertStringEqualsFile($expectedFile, $buffer);
+        $expected = file_get_contents($expectedFile);
+        if ($expected[0] === '~') {
+            $this->assertNotSame(false, preg_match($expected, ""), 'validate the regex pattern for validity first');
+            $this->assertRegExp($expected, $buffer);
+        } else {
+            $this->assertEquals($expected, $buffer);
+        }
     }
 
     private function saveInclude() {

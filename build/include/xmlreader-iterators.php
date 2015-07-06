@@ -19,7 +19,7 @@
  *
  * @author hakre <http://hakre.wordpress.com>
  * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.9
+ * @version 0.1.10
  */
 
 /**
@@ -104,6 +104,7 @@ abstract class XMLBuild
 
     /**
      * @param string $value
+     * @see XMLBuild::numericEntitiesSingleByte
      *
      * @return string
      */
@@ -113,7 +114,7 @@ abstract class XMLBuild
 
         // REC-xml/#AVNormalize - preserve
         // REC-xml/#sec-line-ends - preserve
-        $buffer = preg_replace_callback('~\r\n|\r(?!\n)|\t~', 'self::numericEntitiesSingleByte', $buffer);
+        $buffer = preg_replace_callback('~\r\n|\r(?!\n)|\t~', array('self', 'numericEntitiesSingleByte'), $buffer);
 
         return htmlspecialchars($buffer, ENT_QUOTES, 'UTF-8', false);
     }
@@ -599,6 +600,7 @@ class DOMReadingIteration extends IteratorIterator
     private $rootNode;
 
     private $reader;
+    const XMLNS = 'xmlns';
 
     /**
      * @var array|DOMNode[]
@@ -657,11 +659,11 @@ class DOMReadingIteration extends IteratorIterator
     private function build()
     {
         if (!$this->valid()) {
-            $this->depth      = NULL;
-            $this->lastDetpth = NULL;
-            $this->node       = NULL;
-            $this->lastNode   = NULL;
-            $this->stack      = NULL;
+            $this->depth     = NULL;
+            $this->lastDepth = NULL;
+            $this->node      = NULL;
+            $this->lastNode  = NULL;
+            $this->stack     = NULL;
             return;
         }
 
@@ -688,7 +690,7 @@ class DOMReadingIteration extends IteratorIterator
                 if ($this->reader->moveToFirstAttribute()) {
                     $nsUris = array();
                     do {
-                        if ($this->reader->prefix === 'xmlns') {
+                        if ($this->reader->prefix === self::XMLNS) {
                             $nsUris[$this->reader->localName] = $this->reader->value;
                         }
                     } while ($this->reader->moveToNextAttribute());
@@ -696,7 +698,7 @@ class DOMReadingIteration extends IteratorIterator
                     $this->reader->moveToFirstAttribute();
                     do {
                         $prefix = $this->reader->prefix;
-                        if ($prefix === 'xmlns') {
+                        if ($prefix === self::XMLNS) {
                             $node->setAttributeNS('http://www.w3.org/2000/xmlns/', $this->reader->name, $this->reader->value);
                         } elseif ($prefix) {
                             $uri = $parent->lookupNamespaceUri($prefix) ?: @$nsUris[$prefix];
@@ -731,7 +733,7 @@ class DOMReadingIteration extends IteratorIterator
 
             default:
                 $node    = NULL;
-                $message = sprintf('Unhandeled XMLReader node type %s', XMLReaderNode::dump($this->reader, TRUE));
+                $message = sprintf('Unhandled XMLReader node type %s', XMLReaderNode::dump($this->reader, TRUE));
                 trigger_error($message);
         }
 
@@ -744,7 +746,7 @@ class DOMReadingIteration extends IteratorIterator
 
         if ($this->reader->moveToFirstAttribute()) {
             do {
-                if ($this->reader->prefix === 'xmlns' && $this->reader->localName === $prefix) {
+                if ($this->reader->prefix === self::XMLNS && $this->reader->localName === $prefix) {
                     $uri = $this->reader->value;
                     break;
                 }
@@ -842,6 +844,8 @@ class XMLWritingIteration extends IteratorIterator
 
 /**
  * Class XMLReaderNode
+ *
+ * @property string name inherited from XMLReader via IteratorIterator decoration
  */
 class XMLReaderNode implements XMLReaderAggregate
 {
@@ -997,7 +1001,7 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     public function readOuterXml()
     {
-        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        // Compatibility libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
         if (method_exists($this->reader, 'readOuterXml')) {
             return $this->reader->readOuterXml();
         }
@@ -1057,7 +1061,7 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     public function readString()
     {
-        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        // Compatibility libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
         if (method_exists($this->reader, 'readString')) {
             return $this->reader->readString();
         }
@@ -1074,7 +1078,7 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * Return Nodetype as human readable string (constant name)
+     * Return node-type as human readable string (constant name)
      *
      * @param null $nodeType
      *
@@ -1088,7 +1092,7 @@ class XMLReaderNode implements XMLReaderAggregate
             XMLReader::ATTRIBUTE              => 'ATTRIBUTE',
             XMLREADER::TEXT                   => 'TEXT',
             XMLREADER::CDATA                  => 'CDATA',
-            XMLReader::ENTITY_REF             => 'ENTITIY_REF',
+            XMLReader::ENTITY_REF             => 'ENTITY_REF',
             XMLReader::ENTITY                 => 'ENTITY',
             XMLReader::PI                     => 'PI',
             XMLReader::COMMENT                => 'COMMENT',
@@ -1112,6 +1116,11 @@ class XMLReaderNode implements XMLReaderAggregate
 
     /**
      * decorate method calls
+     *
+     * @param string $name
+     * @param array $args
+     *
+     * @return mixed
      */
     public function __call($name, $args)
     {
@@ -1120,6 +1129,10 @@ class XMLReaderNode implements XMLReaderAggregate
 
     /**
      * decorate property get
+     *
+     * @param string $name
+     *
+     * @return string
      */
     public function __get($name)
     {
@@ -1269,6 +1282,8 @@ class XMLChildIterator extends XMLReaderIterator
  * Class XMLElementIterator
  *
  * Iterate over XMLReader element nodes
+ *
+ * @method string readString() inherited from IteratorIterator decoration of XMLReader
  */
 class XMLElementIterator extends XMLReaderIterator
 {
@@ -1366,6 +1381,11 @@ class XMLElementIterator extends XMLReaderIterator
 
     /**
      * decorate method calls
+     *
+     * @param string $name
+     * @param array  $args
+     *
+     * @return mixed
      */
     public function __call($name, $args)
     {
@@ -1374,6 +1394,10 @@ class XMLElementIterator extends XMLReaderIterator
 
     /**
      * decorate property get
+     *
+     * @param string $name
+     *
+     * @return string
      */
     public function __get($name)
     {
@@ -1506,6 +1530,8 @@ class XMLChildElementIterator extends XMLElementIterator
  * Class XMLReaderFilterBase
  *
  * @since 0.0.21
+ *
+ * @method XMLReaderIterator getInnerIterator()
  */
 abstract class XMLReaderFilterBase extends FilterIterator implements XMLReaderAggregate
 {
@@ -1583,12 +1609,12 @@ abstract class XMLAttributeFilterBase extends XMLReaderFilterBase
         /* @var $node XMLReaderNode */
         $node = parent::current();
         if ('*' === $this->attr) {
-            $attrs = $node->getAttributes()->getArrayCopy();
+            $attributes = $node->getAttributes()->getArrayCopy();
         } else {
-            $attrs = (array) $node->getAttribute($this->attr);
+            $attributes = (array) $node->getAttribute($this->attr);
         }
 
-        return $attrs;
+        return $attributes;
     }
 }
 
@@ -1676,6 +1702,8 @@ class XMLAttributePreg extends XMLAttributeFilterBase
  * Filter an XMLReaderIterator with an Xpath expression
  *
  * @since 0.0.19
+ *
+ * @method XMLElementIterator getInnerIterator()
  */
 class XMLElementXpathFilter extends XMLReaderFilterBase
 {
@@ -1707,6 +1735,7 @@ class XMLElementXpathFilter extends XMLReaderFilterBase
  */
 final class BufferedFileRead
 {
+    const MODE_READ_BINARY = 'rb';
     /**
      * @var string
      */
@@ -1749,14 +1778,21 @@ final class BufferedFileRead
      */
     public function fopen($filename, $mode, $use_include_path = null, $context = null) {
 
-        if ($mode !== 'rb') {
-            trigger_error(
-                sprintf("unsupported mode '%s', only 'rb' is supported for buffered file read", $mode)
+        if ($mode !== self::MODE_READ_BINARY) {
+            $message = sprintf(
+                "unsupported mode '%s', only '%s' is supported for buffered file read", $mode, self::MODE_READ_BINARY
             );
+            trigger_error($message);
+
             return false;
         }
 
-        $handle = fopen($filename, 'rb', $use_include_path, $context);
+        if ($context === null) {
+            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path);
+        } else {
+            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path, $context);
+        }
+
         if (!$handle) {
             return false;
         }
@@ -2086,7 +2122,7 @@ class XMLSequenceStream
 
     public function __construct()
     {
-        # fputs(STDOUT, sprintf('<contruct>'));
+        # fputs(STDOUT, sprintf('<construct>'));
         self::$readers || self::$readers = new BufferedFileReaders();
     }
 

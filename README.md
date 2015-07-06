@@ -1,6 +1,8 @@
 ## Iterators for [PHP `XMLReader`](http://php.net/XMLReader) for ease of parsing
 
-### Changelog:
+### Change Log:
+
+ - `0.1.10` maintenance release with fixes.
 
  - `0.1.9` maintenance release with fixes. added XMLReaderNode::expand().
 

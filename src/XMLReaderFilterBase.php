@@ -25,6 +25,8 @@
  * Class XMLReaderFilterBase
  *
  * @since 0.0.21
+ *
+ * @method XMLReaderIterator getInnerIterator()
  */
 abstract class XMLReaderFilterBase extends FilterIterator implements XMLReaderAggregate
 {

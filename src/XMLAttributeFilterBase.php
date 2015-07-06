@@ -43,11 +43,11 @@ abstract class XMLAttributeFilterBase extends XMLReaderFilterBase
         /* @var $node XMLReaderNode */
         $node = parent::current();
         if ('*' === $this->attr) {
-            $attrs = $node->getAttributes()->getArrayCopy();
+            $attributes = $node->getAttributes()->getArrayCopy();
         } else {
-            $attrs = (array) $node->getAttribute($this->attr);
+            $attributes = (array) $node->getAttribute($this->attr);
         }
 
-        return $attrs;
+        return $attributes;
     }
 }

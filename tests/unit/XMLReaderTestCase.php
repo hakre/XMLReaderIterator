@@ -28,6 +28,17 @@
  */
 class XMLReaderTestCase extends PHPUnit_Framework_TestCase
 {
+    protected function setUp()
+    {
+        // remove any xmlseq stream-wrapper as it might be a left-over from a previous test
+        if (in_array('xmlseq', stream_get_wrappers())) {
+            stream_wrapper_unregister('xmlseq');
+        }
+
+        parent::setUp();
+    }
+
+
     /**
      * helper method to create data-providers
      *
@@ -44,8 +55,9 @@ class XMLReaderTestCase extends PHPUnit_Framework_TestCase
     /**
      * helper method to create data-providers
      *
-     * @param array $result
-     * @param       $path
+     * @param array  $result
+     * @param string $path
+     * @param string $pattern PCRE pattern matched against basename
      *
      * @return array of arrays with one entry of each filename as string
      */

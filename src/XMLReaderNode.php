@@ -23,6 +23,8 @@
 
 /**
  * Class XMLReaderNode
+ *
+ * @property string name inherited from XMLReader via IteratorIterator decoration
  */
 class XMLReaderNode implements XMLReaderAggregate
 {
@@ -178,7 +180,7 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     public function readOuterXml()
     {
-        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        // Compatibility libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
         if (method_exists($this->reader, 'readOuterXml')) {
             return $this->reader->readOuterXml();
         }
@@ -238,7 +240,7 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     public function readString()
     {
-        // Compat libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
+        // Compatibility libxml 20620 (2.6.20) or later - LIBXML_VERSION  / LIBXML_DOTTED_VERSION
         if (method_exists($this->reader, 'readString')) {
             return $this->reader->readString();
         }
@@ -255,7 +257,7 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * Return Nodetype as human readable string (constant name)
+     * Return node-type as human readable string (constant name)
      *
      * @param null $nodeType
      *
@@ -269,7 +271,7 @@ class XMLReaderNode implements XMLReaderAggregate
             XMLReader::ATTRIBUTE              => 'ATTRIBUTE',
             XMLREADER::TEXT                   => 'TEXT',
             XMLREADER::CDATA                  => 'CDATA',
-            XMLReader::ENTITY_REF             => 'ENTITIY_REF',
+            XMLReader::ENTITY_REF             => 'ENTITY_REF',
             XMLReader::ENTITY                 => 'ENTITY',
             XMLReader::PI                     => 'PI',
             XMLReader::COMMENT                => 'COMMENT',
@@ -293,6 +295,11 @@ class XMLReaderNode implements XMLReaderAggregate
 
     /**
      * decorate method calls
+     *
+     * @param string $name
+     * @param array $args
+     *
+     * @return mixed
      */
     public function __call($name, $args)
     {
@@ -301,6 +308,10 @@ class XMLReaderNode implements XMLReaderAggregate
 
     /**
      * decorate property get
+     *
+     * @param string $name
+     *
+     * @return string
      */
     public function __get($name)
     {

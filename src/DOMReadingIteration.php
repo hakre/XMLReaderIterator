@@ -32,6 +32,7 @@ class DOMReadingIteration extends IteratorIterator
     private $rootNode;
 
     private $reader;
+    const XMLNS = 'xmlns';
 
     /**
      * @var array|DOMNode[]
@@ -90,11 +91,11 @@ class DOMReadingIteration extends IteratorIterator
     private function build()
     {
         if (!$this->valid()) {
-            $this->depth      = NULL;
-            $this->lastDetpth = NULL;
-            $this->node       = NULL;
-            $this->lastNode   = NULL;
-            $this->stack      = NULL;
+            $this->depth     = NULL;
+            $this->lastDepth = NULL;
+            $this->node      = NULL;
+            $this->lastNode  = NULL;
+            $this->stack     = NULL;
             return;
         }
 
@@ -121,7 +122,7 @@ class DOMReadingIteration extends IteratorIterator
                 if ($this->reader->moveToFirstAttribute()) {
                     $nsUris = array();
                     do {
-                        if ($this->reader->prefix === 'xmlns') {
+                        if ($this->reader->prefix === self::XMLNS) {
                             $nsUris[$this->reader->localName] = $this->reader->value;
                         }
                     } while ($this->reader->moveToNextAttribute());
@@ -129,7 +130,7 @@ class DOMReadingIteration extends IteratorIterator
                     $this->reader->moveToFirstAttribute();
                     do {
                         $prefix = $this->reader->prefix;
-                        if ($prefix === 'xmlns') {
+                        if ($prefix === self::XMLNS) {
                             $node->setAttributeNS('http://www.w3.org/2000/xmlns/', $this->reader->name, $this->reader->value);
                         } elseif ($prefix) {
                             $uri = $parent->lookupNamespaceUri($prefix) ?: @$nsUris[$prefix];
@@ -164,7 +165,7 @@ class DOMReadingIteration extends IteratorIterator
 
             default:
                 $node    = NULL;
-                $message = sprintf('Unhandeled XMLReader node type %s', XMLReaderNode::dump($this->reader, TRUE));
+                $message = sprintf('Unhandled XMLReader node type %s', XMLReaderNode::dump($this->reader, TRUE));
                 trigger_error($message);
         }
 
@@ -177,7 +178,7 @@ class DOMReadingIteration extends IteratorIterator
 
         if ($this->reader->moveToFirstAttribute()) {
             do {
-                if ($this->reader->prefix === 'xmlns' && $this->reader->localName === $prefix) {
+                if ($this->reader->prefix === self::XMLNS && $this->reader->localName === $prefix) {
                     $uri = $this->reader->value;
                     break;
                 }

@@ -27,6 +27,8 @@
  * Filter an XMLReaderIterator with an Xpath expression
  *
  * @since 0.0.19
+ *
+ * @method XMLElementIterator getInnerIterator()
  */
 class XMLElementXpathFilter extends XMLReaderFilterBase
 {

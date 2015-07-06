@@ -3,7 +3,7 @@
 /**
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013, 2014 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2014, 2015 hakre <http://hakre.wordpress.com>
  *
  * build script
  */
@@ -50,9 +50,8 @@ build_test_autoload_file($errors, $autoLoadFile);
 build_test_tests($errors);
 
 if ($errors) {
-    printf("ERROR: Build (Tests only) had %d errors, quitting.\n", $errors);
-
-    return;
+    // printf("ERROR: Build (Tests only) had %d errors, quitting.\n", $errors);
+    // return;
 }
 
 ### clean ###
@@ -60,10 +59,10 @@ build_make_clean($errors, $buildDir, $concatenateDir);
 
 ### create concatenateFile ###
 build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile, $readmeVersion);
-copy_file_to_dir('README.md', $concatenateDir);
+copy_file_to_dir(__DIR__ . '/README.md', $concatenateDir);
 
 ### conditional build target into gist ###
-$gistDir = __DIR__ . '/../' . basename(__dir__) . '-Gist-5147685';
+$gistDir = __DIR__ . '/../' . basename(__DIR__) . '-Gist-5147685';
 if (is_dir($gistDir)) {
     copy_dir_to_dir($concatenateDir, $gistDir);
 } else {
@@ -71,7 +70,7 @@ if (is_dir($gistDir)) {
 }
 
 if ($errors) {
-    printf("ERROR: Build had %d errors.\n");
+    printf("ERROR: Build had %d errors.\n", $errors);
 }
 
 /**
@@ -86,8 +85,8 @@ function built_test_readme_get_version(&$errors)
     $version =  null;
 
     foreach ($data as $index => $line )  {
-        if ($line === "### Changelog:\n") {
-            $version = preg_match('~`(\d\.\d\.\d)`~', $data[$index + 2], $m) ? $m[1] : null;
+        if ($line === "### Change Log:\n") {
+            $version = preg_match('~`(\d\.\d+\.\d+)`~', $data[$index + 2], $m) ? $m[1] : null;
         }
         if ($index > 10) {
             break;
@@ -107,7 +106,7 @@ function built_test_readme_get_version(&$errors)
 
 function built_validate_version($version, &$errors)
 {
-    if (!preg_match('~^\d.\d.\d$~', $version)) {
+    if (!preg_match('~^\d\.\d+\.\d+$~', $version)) {
         echo "ERROR: Unable to validate version '$version'.\n";
         $errors++;
         return false;
@@ -143,7 +142,7 @@ function built_test_composer_validate_json(&$errors)
 
     $command = "$composer --no-ansi --version";
 
-    $lastline = exec($command, $output, $exitCode);
+    exec($command, $output, $exitCode);
     list($versionLine) = $output;
     if (!preg_match('~^Composer version (?:1.0-dev \([0-9a-f]{40}\)|[0-9a-f]{40}) 2\d{3}-(?:0\d|1[0-2])-(?:[0-2]\d|3[0-1]) (?:[0-1]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)$~', $versionLine)) {
         echo "ERROR: Unable to invoke Composer.\n";
@@ -172,12 +171,16 @@ function build_test_tests(&$errors)
 {
     echo "INFO: Running phpunit testuite before building:\n";
 
-    $phpunit = 'phpunit';
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        $phpunit = '.\vendor\bin\phpunit.bat';
+    } else {
+        $phpunit = './vendor/bin/phpunit';
+    }
 
     $command = "$phpunit --version";
 
-    $lastline = exec($command, $output, $exitCode);
-    list($versionLine) = $output;
+    exec($command, $output, $exitCode);
+    list($versionLine) = $output + array(null);
     if (!preg_match('~^PHPUnit \d\.\d\.\d+ by Sebastian Bergmann\.$~', $versionLine)) {
         echo "ERROR: Unable to invoke PHPUnit.\n";
         $errors++;
@@ -228,9 +231,10 @@ function build_test_autoload_file(&$errors, $autoLoadFile)
 }
 
 /**
- * @param $errors
- * @param $concatenateFile
- * @param $autoLoadFile
+ * @param int    $errors
+ * @param string $concatenateFile
+ * @param string $autoLoadFile
+ * @param string $version
  *
  * @internal param $buildDir
  * @internal param $concatenateFileHandle
@@ -405,16 +409,17 @@ function fseek_first_empty_line($handle)
 function cwdname($path)
 {
     static $base;
-    $base || $base = realpath('.');
-    $result = realpath($path);
+    isset($base) || $base = realpath('.');
 
-    if (substr($result, 0, strlen($base)) === $base) {
-        $result = '.' . substr($result, strlen($base));
-    } else {
+    $baseLen = strlen($base);
+    if (substr($path, 0 , $baseLen) !== $base or !strpos(' ' . '\\/', $path[$baseLen])) {
         echo "INFO: File '$path' not relative to cwd. Please verify.\n";
+        $relative = realpath($path);
+    } else {
+        $relative = ltrim(substr($path, $baseLen), '\\/');
     }
 
-    return strtr($result, '\\', '/');
+    return strtr($relative, '\\', '/');
 }
 
 /**

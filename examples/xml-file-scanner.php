@@ -22,7 +22,7 @@
  */
 
 /**
- * Example: Inspect a large data-dump by scanning the file and siplay XML element structure as tree
+ * Example: Inspect a large data-dump by scanning the file and display XML element structure as tree
  *
  * Note: use as PHP CLI command
  */
@@ -111,7 +111,7 @@ printf(
 
 $indexLimit = (int)max(0, $elementsToScan - 2);
 
-$levels = [];
+$levels = array();
 
 do {
     $saved  = libxml_use_internal_errors(true);
@@ -207,7 +207,7 @@ class Levels
 
     public function getChildrenOfAtLevel($prefix, $level)
     {
-        $children = [];
+        $children = array();
 
         if (isset($this->levels[$level])) {
             foreach ($this->levels[$level] as $path => $count) {
@@ -242,12 +242,6 @@ class LevelsTree implements RecursiveIterator
      * @var int
      */
     private $index;
-
-    /**
-     * @var bool
-     */
-    private $valid;
-
 
     /**
      * @var array
@@ -304,7 +298,7 @@ class LevelsTree implements RecursiveIterator
     public function hasChildren()
     {
         reset($this->toConsume);
-        list($key, $value) = each($this->toConsume);
+        list($key) = each($this->toConsume);
 
         $this->childCachePrefix = $key;
         $this->childCache       = $this->levels->getChildrenOfAtLevel($key, $this->level + 1);

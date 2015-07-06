@@ -55,6 +55,8 @@ class XMLSequenceStreamTest extends XMLReaderTestCase
      * @test
      *
      * @dataProvider provideDeclarations
+     *
+     * @param string $subject
      */
     public function declPosPattern($subject)
     {

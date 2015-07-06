@@ -109,7 +109,7 @@ class XMLSequenceStream
 
     public function __construct()
     {
-        # fputs(STDOUT, sprintf('<contruct>'));
+        # fputs(STDOUT, sprintf('<construct>'));
         self::$readers || self::$readers = new BufferedFileReaders();
     }
 
