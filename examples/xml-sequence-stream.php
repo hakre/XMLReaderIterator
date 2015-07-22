@@ -12,7 +12,7 @@ require('xmlreader-iterators.php'); // require XMLReaderIterator library
 stream_wrapper_register('xmlseq', 'XMLSequenceStream');
 
 // file is an excerpt from https://www.google.com/googlebooks/uspto-patents-grants-text.html - ipg140107.zip
-$path = 'xmlseq://compress.bzip2://data/sequence.xml.bz2';
+$path = 'xmlseq://compress.zlib://data/sequence.xml.gz';
 
 printf("XMLReader over '%s':\n", basename($path));
 
