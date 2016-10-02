@@ -29,6 +29,7 @@
  * @since 0.0.19
  *
  * @method XMLElementIterator getInnerIterator()
+ * @method XMLReaderNode current()
  */
 class XMLElementXpathFilter extends XMLReaderFilterBase
 {
