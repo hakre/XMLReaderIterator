@@ -63,6 +63,13 @@ class ExamplesTest extends XMLReaderTestCase
         } catch(PHPUnit_Framework_SkippedTest $e) {
             throw $e;
         } catch(Exception $e) {
+            if (
+                $e instanceof PHPUnit_Framework_Error_Warning
+                && preg_match('~Unable to find the wrapper "compress.bzip2"~', $e->getMessage())
+            ) {
+                $this->markTestSkipped("wrapper 'compress.bzip2' / php bz2 extension is not installed");
+            }
+
             $this->fail(sprintf('Example %s did throw an exception %s with message %s.', $name, get_class($e), $e->getMessage()));
         }
 
