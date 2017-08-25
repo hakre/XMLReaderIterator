@@ -31,12 +31,12 @@ class XMLWritingIteration extends IteratorIterator
     /**
      * @var XMLWriter
      */
-    private $writer;
+    protected $writer;
 
     /**
      * @var XMLReader
      */
-    private $reader;
+    protected $reader;
 
     public function __construct(XMLWriter $writer, XMLReader $reader) {
         $this->writer = $writer;
