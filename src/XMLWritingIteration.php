@@ -83,6 +83,9 @@ class XMLWritingIteration extends IteratorIterator
                 $writer->writePi($reader->name, $reader->value);
                 break;
 
+            case XMLReader::CDATA:
+                $writer->writeCdata($reader->value);
+
             default:
                 XMLReaderNode::dump($reader);
         }
