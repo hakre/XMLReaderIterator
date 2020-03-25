@@ -1,13 +1,14 @@
 {
-    "name": "shworx/xmlreaderiterator",
+    "name": "hakre/xmlreaderiterator",
     "description": "Iterators for PHP XMLReader for ease of parsing",
     "keywords": ["XML", "XMLReader", "Iterator"],
-    "homepage": "https://github.com/cpcoder/XMLReaderIterator",
+    "homepage": "https://github.com/hakre/XMLReaderIterator",
     "minimum-stability": "stable",
     "license": "AGPL-3.0",
     "authors": [
         {
-            "name": "shworx"
+            "name": "hakre",
+            "homepage": "http://hakre.wordpress.com/"
         }
     ],
     "autoload": {
