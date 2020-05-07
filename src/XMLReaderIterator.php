@@ -68,7 +68,6 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
             if (!$name || $name === $this->reader->name) {
                 break;
             }
-            self::next();
         }
         ;
 
