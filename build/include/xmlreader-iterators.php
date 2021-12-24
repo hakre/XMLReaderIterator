@@ -199,17 +199,17 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         return $this->reader->attributeCount;
     }
 
-    public function current()
+    public function current():mixed
     {
         return $this->reader->value;
     }
 
-    public function key()
+    public function key():mixed
     {
         return $this->reader->name;
     }
 
-    public function next()
+    public function next():void
     {
         $this->valid = $this->reader->moveToNextAttribute();
         if (!$this->valid) {
