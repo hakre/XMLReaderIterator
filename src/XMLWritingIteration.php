@@ -18,13 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
  * Class XMLWritingIteration
  *
  * @since 0.1.2
+ *
+ * @method XMLReader current()
+ * @mixin XMLReaderIteration
  */
 class XMLWritingIteration extends IteratorIterator
 {
@@ -46,10 +49,9 @@ class XMLWritingIteration extends IteratorIterator
     }
 
     public function write() {
-        $this->writeReaderImpl($this->writer, $this->reader);
-    }
+        $reader = $this->reader;
+        $writer = $this->writer;
 
-    private function writeReaderImpl(XMLWriter $writer, XMLReader $reader) {
         switch ($reader->nodeType) {
             case XMLReader::ELEMENT:
                 $writer->startElement($reader->name);
@@ -70,12 +72,17 @@ class XMLWritingIteration extends IteratorIterator
                 $writer->endElement();
                 break;
 
+            case XMLReader::CDATA:
+                $writer->writeCdata($reader->value);
+                break;
+
             case XMLReader::COMMENT:
                 $writer->writeComment($reader->value);
                 break;
 
             case XMLReader::SIGNIFICANT_WHITESPACE:
             case XMLReader::TEXT:
+            case XMLReader::WHITESPACE:
                 $writer->text($reader->value);
                 break;
 
@@ -84,7 +91,11 @@ class XMLWritingIteration extends IteratorIterator
                 break;
 
             default:
-                XMLReaderNode::dump($reader);
+                trigger_error(sprintf(
+                    '%s::write(): Node-type not implemented: %s',
+                    __CLASS__,
+                    XMLReaderNode::dump($reader, true)
+                ), E_USER_WARNING);
         }
     }
 }

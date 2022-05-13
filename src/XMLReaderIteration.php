@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -50,16 +50,17 @@ class XMLReaderIteration implements Iterator
      */
     private $skipNextRead;
 
-    function __construct(XMLReader $reader)
+    public function __construct(XMLReader $reader)
     {
         $this->reader = $reader;
     }
 
     /**
-     * skip the next read on next next()
+     * skip the next read on next "next()"
      *
-     * this is useful of the reader has moved to the next node already inside a foreach iteration and the next
-     * next would move the reader one off.
+     * this is useful of the reader has moved to the next node already inside a
+     * foreach iteration and the next "next()" would move the reader one too
+     * far.
      *
      * @see next
      */
@@ -71,11 +72,13 @@ class XMLReaderIteration implements Iterator
     /**
      * @return XMLReader
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->reader;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->index++;
@@ -88,16 +91,19 @@ class XMLReaderIteration implements Iterator
         }
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->index;
     }
 
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->valid;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         if ($this->reader->nodeType !== XMLReader::NONE) {

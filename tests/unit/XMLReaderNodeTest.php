@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -29,10 +29,8 @@ class XMLReaderNodeTest extends XMLReaderTestCase
     /**
      * some XMLReaderNode can not be turned into a SimpleXMLElement, this tests how robust XMLReaderNode
      * is for the job.
-     *
-     * @test
      */
-    function asSimpleXMLforElementAndSignificantWhitespace()
+    public function testAsSimpleXMLforElementAndSignificantWhitespace()
     {
         $reader = new XMLReaderStub('<root>
             <!-- <3 <3 love XMLReader::SIGNIFICANT_WHITESPACE (14) <3 <3 -->
@@ -40,25 +38,22 @@ class XMLReaderNodeTest extends XMLReaderTestCase
 
         $reader->read(); // (#1) <root>
 
-        // test asSimpleXML() for XMLReader::ELEMENT
+        // test getSimpleXMLElement() for XMLReader::ELEMENT
         $this->assertSame(XMLReader::ELEMENT, $reader->nodeType);
         $node = new XMLReaderNode($reader);
-        $sxml = $node->getSimpleXMLElement();
-        $this->assertInstanceOf('SimpleXMLElement', $sxml);
+        $sxe = $node->getSimpleXMLElement();
+        $this->assertInstanceOf('SimpleXMLElement', $sxe);
 
         $reader->read(); // (#14) SIGNIFICANT_WHITESPACE
 
-        // test asSimpleXML() for XMLReader::SIGNIFICANT_WHITESPACE
+        // test getSimpleXMLElement() for XMLReader::SIGNIFICANT_WHITESPACE
         $this->assertSame(XMLReader::SIGNIFICANT_WHITESPACE, $reader->nodeType);
         $node = new XMLReaderNode($reader);
-        $sxml = $node->getSimpleXMLElement();
-        $this->assertNull($sxml);
+        $sxe = $node->getSimpleXMLElement();
+        $this->assertNull($sxe);
     }
 
-    /**
-     * @test
-     */
-    function expand()
+    public function testExpand()
     {
         $reader = new XMLReaderStub('<products>
             <!--suppress HtmlUnknownAttribute -->
@@ -99,5 +94,16 @@ class XMLReaderNodeTest extends XMLReaderTestCase
         }
 
         $this->assertGreaterThan($previous, $this->getNumAssertions());
+    }
+
+    public function testExpandBaseNodeWithoutDocumentThrows()
+    {
+        $element = new DOMElement('name');
+        $this->assertNull($element->ownerDocument);
+        $reader = new XMLReaderStub('<x/>');
+        $reader->read();
+        $node = new XMLReaderNode($reader);
+        $this->setExpectedException('InvalidArgumentException', 'BaseNode has no OwnerDocument.');
+        $expanded = $node->expand($element);
     }
 }

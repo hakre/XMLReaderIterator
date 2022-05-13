@@ -11,10 +11,11 @@
 $errors = 0;
 $warnings = 0;
 
-$buildDir = __DIR__ . '/build';
+$projectDir = __DIR__;
+$buildDir = $projectDir . '/build';
 $concatenateDir = $buildDir . '/include';
 $concatenateFile = $concatenateDir . '/xmlreader-iterators.php';
-$autoLoadFile = __DIR__ . '/autoload.php';
+$autoLoadFile = $projectDir . '/autoload.php';
 
 ### test if composer.json validates ###
 built_test_composer_validate_json($errors);
@@ -43,8 +44,9 @@ function built_test_git_tag($version, &$errors)
     }
 }
 
-### test if autoload.php contains all classes ###
+### test autoload contains all classes ###
 build_test_autoload_file($errors, $autoLoadFile);
+build_test_autoload_file($errors, $projectDir . '/vendor/autoload.php');
 
 ### test if tests run clean ###
 build_test_tests($errors);
@@ -59,6 +61,7 @@ build_make_clean($errors, $buildDir, $concatenateDir);
 
 ### create concatenateFile ###
 build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile, $readmeVersion);
+build_test_autoload_file($errors, $concatenateFile);
 copy_file_to_dir(__DIR__ . '/README.md', $concatenateDir);
 
 ### conditional build target into gist ###
@@ -144,7 +147,7 @@ function built_test_composer_validate_json(&$errors)
 
     exec($command, $output, $exitCode);
     list($versionLine) = $output;
-    if (!preg_match('~^Composer version (?:1.0-dev \([0-9a-f]{40}\)|[0-9a-f]{40}) 2\d{3}-(?:0\d|1[0-2])-(?:[0-2]\d|3[0-1]) (?:[0-1]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)$~', $versionLine)) {
+    if (!preg_match('~^Composer version (?:[12]\.\d+\.\d+|1\.0-dev \([0-9a-f]{40}\)|[0-9a-f]{40}) 2\d{3}-(?:0\d|1[0-2])-(?:[0-2]\d|3[0-1]) (?:[0-1]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)$~', $versionLine)) {
         echo "ERROR: Unable to invoke Composer.\n";
         $errors++;
         return;
@@ -169,9 +172,9 @@ function built_test_composer_validate_json(&$errors)
  */
 function build_test_tests(&$errors)
 {
-    echo "INFO: Running phpunit testuite before building:\n";
+    echo "INFO: Running phpunit testsuite before building:\n";
 
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    if (stripos(PHP_OS, 'WIN') === 0) {
         $phpunit = '.\vendor\bin\phpunit.bat';
     } else {
         $phpunit = './vendor/bin/phpunit';
@@ -188,9 +191,9 @@ function build_test_tests(&$errors)
         return;
     }
 
-    $command = "$phpunit --stop-on-failure tests";
+    $command = "$phpunit --stop-on-failure --testsuite default";
 
-    $result = system($command, $exitCode);
+    $result = passthru($command, $exitCode);
 
     if ($result === false) {
         echo "ERROR: Unable to invoke PHPUnit tests.\n";
@@ -206,7 +209,7 @@ function build_test_tests(&$errors)
         return;
     }
 
-    echo "INFO: phpunit testuite did pass.\n";
+    echo "INFO: phpunit testsuite did pass.\n";
 
     return;
 }
@@ -217,16 +220,12 @@ function build_test_tests(&$errors)
  */
 function build_test_autoload_file(&$errors, $autoLoadFile)
 {
-    require_once($autoLoadFile);
+    $command = sprintf('php -f %s -- --verbose --require %s', escapeshellarg(__DIR__ . '/tests/autoload/test.php'), escapeshellarg($autoLoadFile));
+    passthru($command, $exitCode);
 
-    foreach (glob('src/*.php') as $file) {
-        $class = basename($file, '.php');
-
-
-        if (!class_exists($class) && !interface_exists($class)) {
-            echo "ERROR: ", $class, " does not exists.\n";
-            $errors++;
-        }
+    if (0 !== $exitCode) {
+        echo "ERROR: autoload file '", $autoLoadFile ,"' broken.\n";
+        $errors++;
     }
 }
 
@@ -330,8 +329,8 @@ function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile
 
     $buffer = file_get_contents($concatenateFile);
 
-    $search  = " * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>\n */";
-    $replace = " * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>\n * @version $version\n */";
+    $search  = " * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>\n */";
+    $replace = " * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>\n * @version $version\n */";
 
     $pos = strpos($buffer, $search);
     if (!$pos) {

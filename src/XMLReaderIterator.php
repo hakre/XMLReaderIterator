@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -41,11 +41,16 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * stores the result of the last XMLReader::read() operation.
      *
-     * additionally it's set to true if not initialized (null) on @see XMLReaderIterator::rewind()
+     * additionally, it's set to true if not initialized (null) on @see XMLReaderIterator::rewind()
      *
      * @var bool
      */
     private $lastRead;
+
+    /**
+     * @var bool
+     */
+    private $skipNextRead;
 
     /**
      * @var array
@@ -60,6 +65,19 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     public function getReader()
     {
         return $this->reader;
+    }
+
+    /**
+     * skip the next read on next "next()"
+     *
+     * compare {@see XMLReaderIteration::skipNextRead()}
+     *
+     * @see XMLReaderIterator::next()
+     *
+     */
+    public function skipNextRead()
+    {
+        $this->skipNextRead = true;
     }
 
     public function moveToNextElementByName($name = null)
@@ -103,8 +121,11 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         return self::valid() ? self::current() : false;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
+        $this->skipNextRead = false;
+
         // this iterator can not really rewind
         if ($this->reader->nodeType === XMLREADER::NONE) {
             self::next();
@@ -117,6 +138,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->lastRead;
@@ -125,27 +147,33 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * @return XMLReaderNode
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return new XMLReaderNode($this->reader);
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->index;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
-        if ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
-            $depth                      = $this->reader->depth;
+        $this->index ++;
+
+        if ($this->skipNextRead) {
+            $this->skipNextRead = false;
+            $this->lastRead = $this->reader->nodeType !== XMLReader::NONE;
+        } elseif ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
+            $depth = $this->reader->depth;
             $this->elementStack[$depth] = new XMLReaderElement($this->reader);
             if (count($this->elementStack) !== $depth + 1) {
                 $this->elementStack = array_slice($this->elementStack, 0, $depth + 1);
             }
         }
-        ;
-        $this->index++;
     }
 
     /**

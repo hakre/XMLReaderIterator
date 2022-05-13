@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -26,8 +26,7 @@
  */
 class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
 {
-    /** @test */
-    public function creationAndCurrent()
+    public function testCreationAndCurrent()
     {
         $reader = $this->createReader();
 
@@ -40,8 +39,7 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
         $this->assertSame('info1', $it->current()->getName());
     }
 
-    /** @test */
-    public function string()
+    public function testString()
     {
         $reader = new XMLReaderStub('<root><b>has</b></root>');
 
@@ -54,8 +52,7 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
         $this->assertEquals("has", $it->readString());
     }
 
-    /** @test */
-    public function iteration()
+    public function testIteration()
     {
         $reader = new XMLReaderStub('<root><b>has</b></root>');
 
@@ -92,8 +89,7 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
 
     }
 
-    /** @test */
-    public function getChildren()
+    public function testGetChildren()
     {
         $reader = $this->createReader();
 
@@ -108,10 +104,7 @@ class XMLElementIteratorTest extends PHPUnit_Framework_TestCase
         $this->assertSame("\n                test\n            ", $array['node4']);
     }
 
-    /**
-     * @test
-     */
-    function iterateOverNamedElements()
+    public function testIterateOverNamedElements()
     {
         $reader = new XMLReaderStub('<r><a>1</a><a>2</a><b>c</b><a>3</a></r>');
         $it     = new XMLElementIterator($reader, 'a');

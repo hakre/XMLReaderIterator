@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -81,9 +81,9 @@ final class BufferedFileRead
         }
 
         if ($context === null) {
-            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path);
+            $handle = fopen($filename, self::MODE_READ_BINARY, (bool)$use_include_path);
         } else {
-            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path, $context);
+            $handle = fopen($filename, self::MODE_READ_BINARY, (bool)$use_include_path, $context);
         }
 
         if (!$handle) {
@@ -106,7 +106,7 @@ final class BufferedFileRead
      */
     public function append($count)
     {
-        $bufferLen = strlen($this->buffer);
+        $bufferLen = null === $this->buffer ? 0 : strlen($this->buffer);
 
         if ($bufferLen >= $count + $this->maxAhead) {
             return $bufferLen;
@@ -118,7 +118,7 @@ final class BufferedFileRead
 
         $read = fread($this->handle, $count);
         if ($read === false) {
-            throw new UnexpectedValueException(sprintf('Can not deal with fread() errors.'));
+            throw new UnexpectedValueException('Can not deal with fread() errors.');
         }
 
         if ($readLen = strlen($read)) {

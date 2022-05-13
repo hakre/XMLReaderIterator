@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -46,6 +46,7 @@ class XMLAttributeFilter extends XMLAttributeFilterBase
         $this->invert  = (bool) $invert;
     }
 
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         $result = $this->search($this->getAttributeValues(), $this->compare);

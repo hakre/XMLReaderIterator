@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -52,13 +52,11 @@ class XMLSequenceStreamTest extends XMLReaderTestCase
     }
 
     /**
-     * @test
-     *
      * @dataProvider provideDeclarations
      *
      * @param string $subject
      */
-    public function declPosPattern($subject)
+    public function testDeclPosPattern($subject)
     {
         $result = preg_match(XMLSequenceStream::DECL_POS_PATTERN, $subject, $matches, PREG_OFFSET_CAPTURE);
         $this->assertNotEquals(false, $result);
@@ -67,12 +65,11 @@ class XMLSequenceStreamTest extends XMLReaderTestCase
     }
 
     /**
-     * @test
      * @dataProvider provideStreamFiles
      *
      * @param $file
      */
-    public function readStream($file)
+    public function testReadStream($file)
     {
         stream_wrapper_register('xmlseq', 'XMLSequenceStream');
         $path = "xmlseq://" . $file;

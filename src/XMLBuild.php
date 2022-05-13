@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -51,7 +51,7 @@ abstract class XMLBuild
             $buffer .= $indent . $line . $lineSeparator;
             $line = strtok($lineSeparator);
         }
-        strtok(null, null);
+        strtok('', '');
 
         return $buffer;
     }
@@ -145,6 +145,41 @@ abstract class XMLBuild
                 $nodeType = $reader->nodeType;
                 return sprintf('%%%s (%d)%%', $nodeTypeName, $nodeType);
         }
+    }
+
+    /**
+     * limit string to maximum length and C-escape non-printable ASCII chars
+     *
+     * @param string $str
+     * @param int|null $maxLen optional, defaults to 20 (null), 0 (or below) for 512 block size
+     * @return string
+     */
+    public static function displayString($str, $maxLen = null)
+    {
+        null === $maxLen && $maxLen = 20;
+        $maxLen = (int) $maxLen;
+        ($maxLen < 1) && $maxLen = 512;
+        ($maxLen < 4) && $maxLen = 3;
+
+        $buffer = $str;
+        $len = strlen($buffer);
+        if ($len > $maxLen) {
+            $buffer = substr($buffer, 0, $maxLen - 3) . '...';
+        }
+        return addcslashes($buffer, "\0..\37\42\134\177..\377");
+    }
+
+    /**
+     * dump representation of a string
+     *
+     * @param string $str
+     * @param int|null $maxLen {@see XMLBuild::displayString()}
+     * @return string
+     */
+    public static function dumpString($str, $maxLen = null)
+    {
+        $buffer = self::displayString($str, $maxLen);
+        return sprintf('(%d) "%s"', strlen($str), $buffer);
     }
 
     /**

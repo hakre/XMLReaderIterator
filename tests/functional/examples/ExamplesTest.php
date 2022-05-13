@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 class ExamplesTest extends XMLReaderTestCase
@@ -39,8 +39,6 @@ class ExamplesTest extends XMLReaderTestCase
 
 
     /**
-     * @test
-     *
      * @param $file
      *
      * @throws Exception
@@ -48,7 +46,7 @@ class ExamplesTest extends XMLReaderTestCase
      *
      * @dataProvider provideExampleFiles
      */
-    public function runPhpFile($file) {
+    public function testRunPhpFile($file) {
         $name = basename($file, '.php');
 
         $buffer = null;
@@ -61,18 +59,30 @@ class ExamplesTest extends XMLReaderTestCase
             }
             $buffer = ob_get_clean();
         } catch(PHPUnit_Framework_SkippedTest $e) {
+            null === $buffer && ob_end_clean();
             throw $e;
+        } catch (PHPUnit_Framework_Error_Warning $e) {
+            null === $buffer && ob_end_clean();
+            $message = $e->getMessage();
+            if ($message !== 'fopen(): Unable to find the wrapper "compress.bzip2" - did you forget to enable it when you configured PHP?') {
+                throw $e;
+            }
+            $this->markTestSkipped('Wrapper "compress.bzip2" not found.');
         } catch(Exception $e) {
-            $this->fail(sprintf('Example %s did throw an exception %s with message %s.', $name, get_class($e), $e->getMessage()));
+            null === $buffer && ob_end_clean();
+            $this->fail(sprintf("Example %s did throw an exception %s with message \"%s\".\n\n%s", $name, get_class($e), $e->getMessage(), $e->getTraceAsString()));
         }
 
         $expectedFile = $this->getExpectedFile($file);
+        if (!file_exists($expectedFile)) {
+            file_put_contents($expectedFile, array("# GENERATED ON ASSUMED FIRST RUN\n", $buffer));
+        }
         $expected = file_get_contents($expectedFile);
         if ($expected[0] === '~') {
             $this->assertNotSame(false, preg_match($expected, ""), 'validate the regex pattern for validity first');
-            $this->assertRegExp($expected, $buffer);
+            $this->assertRegExp($expected, $buffer, $name);
         } else {
-            $this->assertEquals($expected, $buffer);
+            $this->assertEquals($expected, $buffer, $name);
         }
     }
 

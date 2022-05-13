@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -36,8 +36,7 @@ class XMLReaderElementTest extends PHPUnit_Framework_TestCase
         $this->reader  = new XMLReaderStub('<root><child pos="first">node value</child><child pos="first"/></root>');
     }
 
-    /** @test */
-    public function elementCreation() {
+    public function testElementCreation() {
         $reader = $this->reader;
         $reader->next();
         $element = new XMLReaderElement($reader);
@@ -45,8 +44,7 @@ class XMLReaderElementTest extends PHPUnit_Framework_TestCase
         $this->assertSame($element->name, 'root');
     }
 
-    /** @test */
-    public function readerAttributeHandling() {
+    public function testReaderAttributeHandling() {
         $reader = new XMLReaderStub("<root pos=\"first\" plue=\"a&#13;&#10;b&#32;  c\t&#9;d\">node value</root>");
         $reader->next();
         $this->assertSame("first", $reader->getAttribute('pos'));
@@ -56,8 +54,7 @@ class XMLReaderElementTest extends PHPUnit_Framework_TestCase
         $this->assertSame("<root pos=\"first\" plue=\"a&#13;&#10;b   c &#9;d\"/>", $xml, 'XML generation');
     }
 
-    /** @test  */
-    public function checkNodeValue() {
+    public function testCheckNodeValue() {
         $reader = new XMLReaderStub('<root><b>has</b></root>');
 
         /** @var XMLElementIterator|XMLReaderNode[] $it */

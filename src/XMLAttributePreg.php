@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -42,13 +42,14 @@ class XMLAttributePreg extends XMLAttributeFilterBase
     {
         parent::__construct($elements, $attr);
 
-        if (false === preg_match("$pattern", '')) {
+        if (false === preg_match((string)$pattern, '')) {
             throw new InvalidArgumentException("Invalid pcre pattern '$pattern'.");
         }
         $this->pattern = $pattern;
         $this->invert  = (bool) $invert;
     }
 
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         return (bool) preg_grep($this->pattern, $this->getAttributeValues(), $this->invert ? PREG_GREP_INVERT : 0);

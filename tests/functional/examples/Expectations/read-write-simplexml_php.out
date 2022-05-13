@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<offers>
+    <offer>
+        <id><![CDATA[2109]]></id>
+        <name><![CDATA[Sleek Frozen Sausages]]></name>
+        <category><![CDATA[Sleek]]></category>
+        <description><![CDATA[Eum aut qui est delectus suscipit aut voluptas quaerat maiores architecto perferendis dolorum tenetur iure nemo omnis laboriosam voluptatem et iste molestias sed voluptas eum facilis aliquam tempora autem aspernatur ipsum corrupti cum corrupti quae dolor modi consequatur provident illo maiores eius aspernatur id nostrum nisi repellat enim a hic unde laboriosam possimus est ipsam qui mollitia nesciunt est culpa voluptatem sit dignissimos quidem facilis dolorem facilis et explicabo ea veniam quis architecto autem occaecati quaerat omnis reprehenderit doloribus labore saepe asperiores a ea possimus dolor necessitatibus numquam doloremque velit fuga ipsam numquam quia omnis voluptas voluptas rerum sint eveniet sit in error quia nemo delectus perferendis asperiores quam quam assumenda reiciendis sunt aut et saepe ea adipisci eum debitis odit similique consectetur nesciunt ducimus maxime sed consequuntur repellendus qui illum vero necessitatibus perferendis cumque optio voluptatibus et quas velit voluptatem tempore est et officiis tempora iusto rerum eum amet a qui corrupti ex nobis laborum eum assumenda velit laboriosam et sed sapiente accusantium officia enim doloremque perspiciatis quos ut rerum molestias ut ut aut omnis vitae placeat voluptas iusto distinctio ea molestias et at et aliquam libero non neque dicta quos numquam est non explicabo ipsa neque dolores rerum.]]></description>
+        <price><![CDATA[252.65 EUR]]></price>
+        <url><![CDATA[https://example.com/product/2109]]></url>
+        <image_url><![CDATA[http://lorempixel.com/640/480]]></image_url>
+        <opening_times><![CDATA[{"1":[{"opening":"10:00","closing":"22:30"}],"2":[{"opening":"10:00","closing":"22:30"}],"3":[{"opening":"10:00","closing":"22:30"}],"4":[{"opening":"10:00","closing":"22:30"}],"5":[{"opening":"10:00","closing":"22:30"}],"6":[{"opening":"10:00","closing":"22:30"}],"7":[],"timezone":"Europe/Warsaw"}]]></opening_times>
+    <is_active>true</is_active></offer>
+    <offer>
+        <id><![CDATA[7673]]></id>
+        <name><![CDATA[Ergonomic Soft Fish]]></name>
+        <category><![CDATA[Rustic]]></category>
+        <description><![CDATA[Pariatur consectetur autem reiciendis ab ea est fugiat tenetur suscipit ut sit rem accusamus accusamus accusamus veniam commodi omnis quia minus ratione reprehenderit est porro omnis modi et ipsa aut itaque impedit inventore modi nisi nemo commodi nesciunt earum quia sed assumenda nulla quia qui neque laborum vitae nobis dolorem perspiciatis tenetur nisi asperiores eos itaque dolorem sit est nostrum sequi similique doloremque vero id voluptas exercitationem eveniet saepe non impedit aut neque aut sed molestiae aut cum hic consectetur facilis porro atque perspiciatis maiores maiores ut aut enim iste maxime dolores est dolores quaerat dolores error nisi et esse voluptas occaecati nostrum quasi vero porro natus iste molestiae totam culpa vero voluptate porro aut ut iusto non ullam quam aut itaque velit quis maiores nobis officia ut iure voluptatibus iure nihil optio repellendus eum similique eum in excepturi doloremque rerum cumque accusantium fuga sed sed odit vel qui nam eum iure sapiente magni et temporibus quis qui pariatur tempora odit explicabo et mollitia autem nihil autem repellat ut et laudantium ab dolores nisi porro fuga sed laudantium quae delectus debitis quaerat doloremque praesentium quod ullam accusamus architecto earum impedit esse sint sint fugiat nihil itaque ut ut aut provident.]]></description>
+        <price><![CDATA[384.12 EUR]]></price>
+        <url><![CDATA[https://example.com/product/7673]]></url>
+        <image_url><![CDATA[http://lorempixel.com/640/480]]></image_url>
+        <opening_times><![CDATA[{"1":[{"opening":"14:00","closing":"23:00"}],"2":[{"opening":"14:00","closing":"23:00"}],"3":[{"opening":"14:00","closing":"23:00"}],"4":[{"opening":"14:00","closing":"23:00"}],"5":[{"opening":"14:00","closing":"23:00"}],"6":[{"opening":"14:00","closing":"23:00"}],"7":[],"timezone":"Europe/Warsaw"}]]></opening_times>
+    <is_active>true</is_active></offer>
+</offers>

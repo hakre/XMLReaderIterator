@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -170,7 +170,7 @@ class XMLSequenceStream
         # fputs(STDOUT, sprintf('<read: %d - buffer: %d - eof: %d>', $count, strlen($reader->buffer), $this->flagEof));
 
         if ($this->flagEof) {
-            return false;
+            return '';
         }
 
         $bufferLen = $reader->append($count);

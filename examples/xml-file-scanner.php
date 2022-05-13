@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -131,7 +131,6 @@ do {
     $lastRuntime = 0;
     $messageLastLen = 0;
 
-    /** @var XMLChildElementIterator|XMLReaderNode[] $children */
     $children = new XMLChildElementIterator($reader, null, true);
     foreach ($children as $index => $child) {
         $path  = $children->getNodePath();
@@ -248,39 +247,41 @@ class LevelsTree implements RecursiveIterator
      */
     private $toConsume;
 
-
     /**
      * @var array
      */
     private $childCache;
     private $childCachePrefix;
 
-
-    function __construct(Levels $levels, $level = 0, $prefix = '')
+    public function __construct(Levels $levels, $level = 0, $prefix = '')
     {
         $this->levels = $levels;
         $this->level  = $level;
         $this->prefix = $prefix;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->toConsume = $this->levels->getChildrenOfAtLevel($this->prefix, $this->level);
         $this->index     = 0;
     }
 
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return (bool)$this->toConsume;
     }
 
+    #[\ReturnTypeWillChange]
     public function current()
     {
         reset($this->toConsume);
-        list($key, $value) = each($this->toConsume);
+        list($key, $value) = array(key($this->toConsume), current($this->toConsume));
         return sprintf("%s (%d)", basename($key), $value);
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         if ($this->toConsume) {
@@ -289,16 +290,17 @@ class LevelsTree implements RecursiveIterator
         }
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->index;
     }
 
-
+    #[\ReturnTypeWillChange]
     public function hasChildren()
     {
         reset($this->toConsume);
-        list($key) = each($this->toConsume);
+        $key = key($this->toConsume);
 
         $this->childCachePrefix = $key;
         $this->childCache       = $this->levels->getChildrenOfAtLevel($key, $this->level + 1);
@@ -306,6 +308,7 @@ class LevelsTree implements RecursiveIterator
         return (bool)$this->childCache;
     }
 
+    #[\ReturnTypeWillChange]
     public function getChildren()
     {
         if (!$this->childCache) {

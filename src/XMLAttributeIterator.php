@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -37,21 +37,25 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         $this->reader = $reader;
     }
 
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return $this->reader->attributeCount;
     }
 
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->reader->value;
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->reader->name;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->valid = $this->reader->moveToNextAttribute();
@@ -60,11 +64,13 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         }
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->valid = $this->reader->moveToFirstAttribute();
     }
 
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->valid;
@@ -84,6 +90,7 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         return array_keys($this->getArrayCopy());
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         $attributes = $this->getArrayCopy();
@@ -91,6 +98,7 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         return isset($attributes[$offset]);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         $attributes = $this->getArrayCopy();
@@ -98,11 +106,13 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         return $attributes[$offset];
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         throw new BadMethodCallException('XMLReader attributes are read-only');
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         throw new BadMethodCallException('XMLReader attributes are read-only');
@@ -113,6 +123,6 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
      */
     public function getReader()
     {
-        return $this->getReader();
+        return $this->reader;
     }
 }

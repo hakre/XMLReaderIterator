@@ -2,7 +2,7 @@
 /*
  * This file is part of the XMLReaderIterator package.
  *
- * Copyright (C) 2012, 2013 hakre <http://hakre.wordpress.com>
+ * Copyright (C) 2012, 2013, 2015, 2022 hakre <http://hakre.wordpress.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,25 +21,20 @@
  * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
-/**
- * Class XMLReaderFilterBase
- *
- * @since 0.0.21
- *
- * @method XMLReaderIterator getInnerIterator()
- */
-abstract class XMLReaderFilterBase extends FilterIterator implements XMLReaderAggregate
+class XMLWritingIterationTest extends XMLReaderTestCase
 {
-
-    public function __construct(XMLReaderIterator $elements) {
-        parent::__construct($elements);
-    }
-
-    /**
-     * @return XMLReader
-     */
-    public function getReader()
+    public function testUnsupportedDocumentNodeEmitsError()
     {
-        return $this->getInnerIterator()->getReader();
+        $reader = new \XMLReader();
+        $writer = new \XMLWriter();
+        $iteration = new \XMLWritingIteration($writer, $reader);
+        $reader->open(__DIR__ . '/../../examples/data/movies.xml');
+        $this->assertSame(XMLReader::NONE, $reader->nodeType);
+        $previous = error_get_last();
+        @$iteration->write();
+        $error = error_get_last();
+        $this->assertNotSame($previous, $error);
+        $this->assertSame(E_USER_WARNING, $error['type']);
+        $this->assertSame('XMLWritingIteration::write(): Node-type not implemented: (#0) NONE', $error['message']);
     }
 }

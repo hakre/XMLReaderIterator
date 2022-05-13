@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -56,7 +56,7 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     private $attributes;
 
-    /** @var null|string  */
+    /** @var string  */
     private $string;
 
     public function __construct(XMLReader $reader)
@@ -78,26 +78,29 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * SimpleXMLElement for XMLReader::ELEMENT
      *
+     * @param string $className SimpleXMLElement class name of the simplexml element
      * @return SimpleXMLElement|null in case the current node can not be converted into a SimpleXMLElement
      * @since 0.1.4
      */
-    public function getSimpleXMLElement()
+    public function getSimpleXMLElement($className = null)
     {
         if (null === $this->simpleXML) {
             if ($this->reader->nodeType !== XMLReader::ELEMENT) {
                 return null;
             }
 
-            $node            = $this->expand();
-            $this->simpleXML = simplexml_import_dom($node);
+            $this->simpleXML = simplexml_import_dom($this->expand(), $className);
+        }
+
+        if (is_string($className) && !($this->simpleXML instanceof $className)) {
+            $this->simpleXML = simplexml_import_dom(dom_import_simplexml($this->simpleXML), $className);
         }
 
         return $this->simpleXML;
     }
 
     /**
-     * Alias of @see getSimpleXMLElement()
-     *
+     * @deprecated since v0.1.4, use {@see getSimpleXMLElement()} instead
      * @return null|SimpleXMLElement
      */
     public function asSimpleXML()
@@ -202,26 +205,29 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * XMLReader expand node and import it into a DOMNode with a DOMDocument
      *
-     * This is for example useful for DOMDocument::saveXML() @see readOuterXml
-     * or getting a SimpleXMLElement out of it @see getSimpleXMLElement
+     * This is for example useful for DOMDocument::saveXML() {@see readOuterXml}
+     * or getting a SimpleXMLElement out of it {@see getSimpleXMLElement}
      *
+     * @param DOMNode $baseNode
      * @throws BadMethodCallException
-     * @param DOMNode $basenode
      * @return DOMNode
      */
-    public function expand(DOMNode $basenode = null)
+    public function expand(DOMNode $baseNode = null)
     {
-        if (null === $basenode) {
-            $basenode = new DomDocument();
+        if (null === $baseNode) {
+            $baseNode = new DomDocument();
         }
 
-        if ($basenode instanceof DOMDocument) {
-            $doc = $basenode;
+        if ($baseNode instanceof DOMDocument) {
+            $doc = $baseNode;
         } else {
-            $doc = $basenode->ownerDocument;
+            $doc = $baseNode->ownerDocument;
+            if (null === $doc) {
+                throw new InvalidArgumentException('BaseNode has no OwnerDocument.');
+            }
         }
 
-        if (false === $node = $this->reader->expand($basenode)) {
+        if (false === $node = $this->reader->expand($baseNode)) {
             throw new BadMethodCallException('Unable to expand node.');
         }
 
@@ -257,7 +263,7 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * Return node-type as human readable string (constant name)
+     * Return node-type as human-readable string (constant name)
      *
      * @param null $nodeType
      *
@@ -319,11 +325,30 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
+    public function __set($name, $value)
+    {
+        throw new BadMethodCallException('XMLReader properties are read-only: ' . $name);
+    }
+
+    /**
+     * @param string $name
+     * @return bool
+     */
+    public function __isset($name)
+    {
+        return isset($this->reader->$name);
+    }
+
+    /**
      * debug utility method
      *
      * @param XMLReader $reader
      * @param bool $return (optional) prints by default but can return string
-     * @return string|null
+     * @return string|void
      */
     public static function dump(XMLReader $reader, $return = FALSE)
     {
@@ -335,42 +360,33 @@ class XMLReaderNode implements XMLReaderAggregate
         $extra = '';
 
         if ($reader->nodeType === XMLReader::ELEMENT) {
-            $extra = '<' . $reader->name . '> ';
-            $extra .= sprintf("(isEmptyElement: %s) ", $reader->isEmptyElement ? 'Yes' : 'No');
+            $extra = ' <' . $reader->name . '> ';
+            $extra .= sprintf("(isEmptyElement: %s)", $reader->isEmptyElement ? 'Yes' : 'No');
         }
 
         if ($reader->nodeType === XMLReader::END_ELEMENT) {
-            $extra = '</' . $reader->name . '> ';
+            $extra = ' </' . $reader->name . '>';
         }
 
         if ($reader->nodeType === XMLReader::ATTRIBUTE) {
-            $str = $reader->value;
-            $len = strlen($str);
-            if ($len > 20) {
-                $str = substr($str, 0, 17) . '...';
-            }
-            $str   = strtr($str, array("\n" => '\n'));
-            $extra = sprintf('%s = (%d) "%s" ', $reader->name, strlen($str), $str);
+            $extra = sprintf(' %s = %s', $reader->name, XMLBuild::dumpString($reader->value));
         }
 
-        if ($reader->nodeType === XMLReader::TEXT || $reader->nodeType === XMLReader::WHITESPACE || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE) {
-            $str = $reader->readString();
-            $len = strlen($str);
-            if ($len > 20) {
-                $str = substr($str, 0, 17) . '...';
-            }
-            $str   = strtr($str, array("\n" => '\n'));
-            $extra = sprintf('(%d) "%s" ', strlen($str), $str);
+
+        if ($reader->nodeType === XMLReader::CDATA
+            || $reader->nodeType === XMLReader::TEXT
+            || $reader->nodeType === XMLReader::WHITESPACE
+            || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE
+        ) {
+            $extra = sprintf( ' %s', XMLBuild::dumpString($reader->value));
         }
 
-        $label = sprintf("(#%d) %s %s", $nodeType, $nodeName, $extra);
+        $label = sprintf("(#%d) %s%s", $nodeType, $nodeName, $extra);
 
         if ($return) {
             return $label;
         }
 
         printf("%s%s\n", str_repeat('  ', $reader->depth), $label);
-
-        return null;
     }
 }

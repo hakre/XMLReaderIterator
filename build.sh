@@ -3,7 +3,7 @@
 # build script on clean checkout
 #
 
-if [ -n "TRAVIS" ]; then
+if [ -n "$TRAVIS" ]; then
     echo "build on travis with php ${TRAVIS_PHP_VERSION}"
     if [ "${TRAVIS_PHP_VERSION}" == "5.2" ]; then
         echo "5.2 is not a composer version, can't build, exiting."
@@ -19,6 +19,11 @@ fi
 if [ ! -d vendor ]; then
     echo "build dependencies not installed!"
     exit 1
+fi
+
+if [ -f vendor/vendor-dev.patch ] && command -v git &> /dev/null; then
+  git --version
+  git apply --unsafe-paths --directory=vendor -- vendor/vendor-dev.patch
 fi
 
 php -f build.php

@@ -4,7 +4,8 @@
  *
  * Copyright (C) 2012, 2014 hakre <http://hakre.wordpress.com>
  *
- * Example: Write XML with XMLWriter while reading from XMLReader with XMLWriterIteration
+ * Example: Write XML with XMLWriter while reading from XMLReader with
+ * XMLWriterIteration; insert new attributes.
  */
 
 require('xmlreader-iterators.php'); // require XMLReaderIterator library

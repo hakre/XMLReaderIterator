@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -26,10 +26,7 @@
  */
 class XMLReaderIterationTest extends PHPUnit_Framework_TestCase
 {
-    /**
-     * @test
-     */
-    public function creation()
+    public function testCreation()
     {
         $iterator = new XMLReaderIteration(new XMLReaderStub('<root/>'));
         $this->assertInstanceOf('XMLReaderIteration', $iterator);
@@ -37,10 +34,7 @@ class XMLReaderIterationTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Iterator', $iterator);
     }
 
-    /**
-     * @test
-     */
-    public function iteration()
+    public function testIteration()
     {
         $reader   = new XMLReaderStub('<root><element></element></root>');
         $iterator = new XMLReaderIteration($reader);
@@ -66,10 +60,7 @@ class XMLReaderIterationTest extends PHPUnit_Framework_TestCase
         $this->assertSame(4, $count);
     }
 
-    /**
-     * @test
-     */
-    public function skipNextRead()
+    public function testSkipNextRead()
     {
         $reader   = new XMLReaderStub('<r/>');
         $iterator = new XMLReaderIteration($reader);

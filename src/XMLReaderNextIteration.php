@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -46,6 +46,7 @@ class XMLReaderNextIteration implements Iterator
         $this->localName = $localName;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         // XMLReader can not rewind, instead we move on if before the first node
@@ -54,21 +55,25 @@ class XMLReaderNextIteration implements Iterator
         $this->index = 0;
     }
 
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->valid;
     }
 
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->reader;
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->index;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->valid && $this->index++;

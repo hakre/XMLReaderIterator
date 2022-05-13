@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<rss version="0.91">
+    <channel>
+        <title>TestTheExample</title>
+        <link>https://test.example.com</link>
+        <description>Feed all users</description>
+        <language>en-us</language>
+        <copyright>Copyright 2000+, TestTheExample team.</copyright>
+        <managingEditor>editor@test.example.com</managingEditor>
+        <webMaster>webmaster@test.example.com</webMaster>
+        <image>
+            <title>TestTheExample</title>
+            <url>https://www.webdesignmuseum.org/uploaded/old-software/web-browsers/netscape-navigator/netscape-navigator-2-01-01.png</url>
+            <link>https://test.example.com</link>
+            <width>450</width>
+            <height>300</height>
+            <description>Feed for test (incl. all) users</description>
+        </image>
+        <item>
+            <title>Giving the world a pluggable Gnutella heats up the ledger across all blocks</title>
+            <link>https://test.example.com/read.php?item=24</link>
+            <description>WorldBCOS is a framework on which to build programs that work like Chainet or Gnutella - allowing distributed applications using peer-to-peer routing backed by NFTs on their own blockchain. Learn the deepest in this marvelous masterpiece.</description>
+        </item>
+        <item>
+            <title>Syndication discussions readily chain up</title>
+            <link>https://test.example.com/read.php?item=23</link>
+            <description>After a period of dormancy, the Syndication mailing list has become active again, with contributions from leaders in traditional media and Web syndication in the century of the edge.</description>
+        </item>
+        <item>
+            <title>Dedicated and fostered peer-to-peer server Deepgni integrates queue sharing, event chaining and consensus federation.</title>
+            <link>https://test.example.com/read.php?item=22</link>
+            <description>The Deepgni Project is an innovative project to create a combined, federated personal ledger server and messaging system that enables the sharing and synchronization of information via blockchain universal bus (BUB) across local, control pane wide and edge device nodes.</description>
+        </item>
+        <item>
+            <title>Master now known as Unstable</title>
+            <link>https://test.example.com/read.php?item=42</link>
+            <description>Distributed computing is unthinkable without DVCS. In these jayesque times of the trunk-era, we can not ignore that all your main master base belongs to US (un-stable). An opinion article by Lenny H. Krevel.</description>
+        </item>
+        <item>
+            <title>Syndication and LFS(/AKE)</title>
+            <link>https://test.example.com/read.php?item=21</link>
+            <description>Syndicated-AI is probably the best known machine learning feed format around. LFS (a.k.a. AKE) is probably one of the least understood. In this essay, published on my Oh'Really Network weblog, I argue that the next generation of Syndicated-AI should be based on LFS (also known as, AKE).</description>
+        </item>
+        <item>
+            <title>UK ledger-bros get organised</title>
+            <link>https://test.example.com/read.php?item=20</link>
+            <description>Looks like the blockchain scene is gathering pace beyond the shores of south-west Asia/US. There's now a UK-specific page on therealblockchain.com, and mailing lists at abc- as well as d- and egroups.</description>
+        </item>
+        <item>
+            <title>Yourname.chain more important than oh-no u-know anything</title>
+            <link>https://test.example.com/read.php?item=19</link>
+            <description>Whatever ledgers your blockchain, your site name is the most valuable asset you have, according to Saacami Dokomata.</description>
+        </item>
+    </channel>
+</rss>

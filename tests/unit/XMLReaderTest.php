@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
  */
 
 /**
@@ -27,12 +27,11 @@
 class XMLReaderTest extends XMLReaderTestCase
 {
     /**
-     * @test
      * @dataProvider provideAllFiles
      *
      * @param string $xml
      */
-    function readBehavior($xml)
+    public function testReadBehavior($xml)
     {
         $reader = new XMLReaderStub($xml);
 
@@ -52,12 +51,11 @@ class XMLReaderTest extends XMLReaderTestCase
     }
 
     /**
-     * @test
      * @dataProvider provideAllFiles
      *
      * @param string $xml
      */
-    function nextBehavior($xml)
+    public function testNextBehavior($xml)
     {
         $reader = new XMLReaderStub($xml);
 

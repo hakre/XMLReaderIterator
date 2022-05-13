@@ -1,0 +1,172 @@
+phpunit-php-file-iterator-1.4.5-1-gb26c6f3.patch
+phpunit-phpunit-3.7.38-11-g63c17ac43.patch
+diff --git a/phpunit/php-file-iterator/src/Iterator.php b/phpunit/php-file-iterator/src/Iterator.php
+index c8f20a7..a09a3e9 100644
+--- a/phpunit/php-file-iterator/src/Iterator.php
++++ b/phpunit/php-file-iterator/src/Iterator.php
+@@ -73,6 +73,7 @@ public function __construct(Iterator $iterator, array $suffixes = array(), array
+     /**
+      * @return bool
+      */
++    #[\ReturnTypeWillChange]
+     public function accept()
+     {
+         $current  = $this->getInnerIterator()->current();
+diff --git a/phpunit/phpunit/PHPUnit/Framework/Comparator/DOMDocument.php b/phpunit/phpunit/PHPUnit/Framework/Comparator/DOMDocument.php
+index 562b8fbcc..8ffb21cf5 100644
+--- a/phpunit/phpunit/PHPUnit/Framework/Comparator/DOMDocument.php
++++ b/phpunit/phpunit/PHPUnit/Framework/Comparator/DOMDocument.php
+@@ -83,7 +83,7 @@ public function accepts($expected, $actual)
+      *                           fails. Contains information about the
+      *                           specific errors that lead to the failure.
+      */
+-    public function assertEquals($expected, $actual, $delta = 0, $canonicalize = FALSE, $ignoreCase = FALSE)
++    public function assertEquals($expected, $actual, $delta = 0, $canonicalize = FALSE, $ignoreCase = FALSE, array &$processed = array())
+     {
+         if ($expected->C14N() !== $actual->C14N()) {
+             throw new PHPUnit_Framework_ComparisonFailure(
+diff --git a/phpunit/phpunit/PHPUnit/Framework/Constraint.php b/phpunit/phpunit/PHPUnit/Framework/Constraint.php
+index 6081c7829..512afec91 100644
+--- a/phpunit/phpunit/PHPUnit/Framework/Constraint.php
++++ b/phpunit/phpunit/PHPUnit/Framework/Constraint.php
+@@ -112,6 +112,7 @@ protected function matches($other)
+      * @return integer
+      * @since  Method available since Release 3.4.0
+      */
++    #[\ReturnTypeWillChange]
+     public function count()
+     {
+         return 1;
+diff --git a/phpunit/phpunit/PHPUnit/Framework/TestCase.php b/phpunit/phpunit/PHPUnit/Framework/TestCase.php
+index 398ed947e..e676df9ae 100644
+--- a/phpunit/phpunit/PHPUnit/Framework/TestCase.php
++++ b/phpunit/phpunit/PHPUnit/Framework/TestCase.php
+@@ -328,6 +328,7 @@ public function toString()
+      *
+      * @return integer
+      */
++    #[\ReturnTypeWillChange]
+     public function count()
+     {
+         return 1;
+diff --git a/phpunit/phpunit/PHPUnit/Framework/TestResult.php b/phpunit/phpunit/PHPUnit/Framework/TestResult.php
+index d9691a4b0..89c738846 100644
+--- a/phpunit/phpunit/PHPUnit/Framework/TestResult.php
++++ b/phpunit/phpunit/PHPUnit/Framework/TestResult.php
+@@ -729,6 +729,7 @@ public function run(PHPUnit_Framework_Test $test)
+      *
+      * @return integer
+      */
++    #[\ReturnTypeWillChange]
+     public function count()
+     {
+         return $this->runTests;
+diff --git a/phpunit/phpunit/PHPUnit/Framework/TestSuite.php b/phpunit/phpunit/PHPUnit/Framework/TestSuite.php
+index b1a3da578..324fcf7fc 100644
+--- a/phpunit/phpunit/PHPUnit/Framework/TestSuite.php
++++ b/phpunit/phpunit/PHPUnit/Framework/TestSuite.php
+@@ -422,6 +422,7 @@ public function addTestFiles($filenames)
+      *
+      * @return integer
+      */
++    #[\ReturnTypeWillChange]
+     public function count()
+     {
+         if ($this->numTests > -1) {
+@@ -925,6 +926,7 @@ public function setBackupStaticAttributes($backupStaticAttributes)
+      * @return RecursiveIteratorIterator
+      * @since  Method available since Release 3.1.0
+      */
++    #[\ReturnTypeWillChange]
+     public function getIterator()
+     {
+         return new RecursiveIteratorIterator(
+diff --git a/phpunit/phpunit/PHPUnit/TextUI/Command.php b/phpunit/phpunit/PHPUnit/TextUI/Command.php
+index 6cf867014..e050809e0 100644
+--- a/phpunit/phpunit/PHPUnit/TextUI/Command.php
++++ b/phpunit/phpunit/PHPUnit/TextUI/Command.php
+@@ -274,7 +274,7 @@ protected function handleArguments(array $argv)
+                           'tokenizer', 'No code coverage will be generated.'
+                         );
+ 
+-                        continue;
++                        continue 2;
+                     }
+ 
+                     if (!extension_loaded('xdebug')) {
+@@ -282,7 +282,7 @@ protected function handleArguments(array $argv)
+                           'Xdebug', 'No code coverage will be generated.'
+                         );
+ 
+-                        continue;
++                        continue 2;
+                     }
+ 
+                     switch ($option[0]) {
+diff --git a/phpunit/phpunit/PHPUnit/Util/Configuration.php b/phpunit/phpunit/PHPUnit/Util/Configuration.php
+index 8405922d7..6aba227eb 100644
+--- a/phpunit/phpunit/PHPUnit/Util/Configuration.php
++++ b/phpunit/phpunit/PHPUnit/Util/Configuration.php
+@@ -196,7 +196,7 @@ protected function __construct($filename)
+     /**
+      * @since  Method available since Release 3.4.0
+      */
+-    private final function __clone()
++    private function __clone()
+     {
+     }
+ 
+@@ -534,13 +534,13 @@ public function handlePHPConfiguration()
+             }
+         }
+ 
+-        foreach (array('var', 'env', 'post', 'get', 'cookie', 'server', 'files', 'request') as $array) {
++        foreach ($configuration['var'] as $name => $data) {
++            $GLOBALS[$name] = $data['value'];
++        }
++
++        foreach (array('env', 'post', 'get', 'cookie', 'server', 'files', 'request') as $array) {
+             // See https://github.com/sebastianbergmann/phpunit/issues/277
+             switch ($array) {
+-                case 'var':
+-                    $target = &$GLOBALS;
+-                    break;
+-
+                 case 'env':
+                     $target = &$_ENV;
+                     break;
+diff --git a/phpunit/phpunit/PHPUnit/Util/Getopt.php b/phpunit/phpunit/PHPUnit/Util/Getopt.php
+index 41ec26c02..19c335115 100644
+--- a/phpunit/phpunit/PHPUnit/Util/Getopt.php
++++ b/phpunit/phpunit/PHPUnit/Util/Getopt.php
+@@ -77,7 +77,18 @@ public static function getopt(array $args, $short_options, $long_options = NULL)
+         reset($args);
+         array_map('trim', $args);
+ 
+-        while (list($i, $arg) = each($args)) {
++        // foreach not! applicable
++        // each — Return the current key and value pair from an array and advance the array cursor
++        // each(array|object &$array): array
++        // 0: key, 1: value (index-int-filtered, index-ordered)
++        // If the internal pointer for the array points past the end of the array contents, each() returns false.
++        // each($args) =>
++        //     array(key($args), current($args))
++        // hack #1: (foreach, but is not compatible)
++        // hack #2: (array index 2 result of next() call, previously unused)
++        // null === key($args) ? false : array(key($args), current($args), next($args))
++
++        while (list($i, $arg) = null === key($args) ? false : array(key($args), current($args), next($args))) {
+             if ($arg == '') {
+                 continue;
+             }
+@@ -183,8 +194,8 @@ protected static function parseLongOption($arg, $long_options, &$opts, &$args)
+ 
+             if (substr($long_opt, -1) == '=') {
+                 if (substr($long_opt, -2) != '==') {
+-                    if (!strlen($opt_arg) &&
+-                        !(list(, $opt_arg) = each($args))) {
++                    if ((null === $opt_arg || !strlen($opt_arg)) &&
++                        !(list(, $opt_arg) = null === key($args) ? false : array(key($args), current($args), next($args)))) {
+                         throw new PHPUnit_Framework_Exception(
+                           "option --$opt requires an argument"
+                         );

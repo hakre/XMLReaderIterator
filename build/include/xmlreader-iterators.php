@@ -18,8 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author hakre <http://hakre.wordpress.com>
- * @license AGPL-3.0 <http://spdx.org/licenses/AGPL-3.0>
- * @version 0.1.10
+ * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>
+ * @version 0.1.11
  */
 
 /**
@@ -65,7 +65,7 @@ abstract class XMLBuild
             $buffer .= $indent . $line . $lineSeparator;
             $line = strtok($lineSeparator);
         }
-        strtok(null, null);
+        strtok('', '');
 
         return $buffer;
     }
@@ -162,6 +162,41 @@ abstract class XMLBuild
     }
 
     /**
+     * limit string to maximum length and C-escape non-printable ASCII chars
+     *
+     * @param string $str
+     * @param int|null $maxLen optional, defaults to 20 (null), 0 (or below) for 512 block size
+     * @return string
+     */
+    public static function displayString($str, $maxLen = null)
+    {
+        null === $maxLen && $maxLen = 20;
+        $maxLen = (int) $maxLen;
+        ($maxLen < 1) && $maxLen = 512;
+        ($maxLen < 4) && $maxLen = 3;
+
+        $buffer = $str;
+        $len = strlen($buffer);
+        if ($len > $maxLen) {
+            $buffer = substr($buffer, 0, $maxLen - 3) . '...';
+        }
+        return addcslashes($buffer, "\0..\37\42\134\177..\377");
+    }
+
+    /**
+     * dump representation of a string
+     *
+     * @param string $str
+     * @param int|null $maxLen {@see XMLBuild::displayString()}
+     * @return string
+     */
+    public static function dumpString($str, $maxLen = null)
+    {
+        $buffer = self::displayString($str, $maxLen);
+        return sprintf('(%d) "%s"', strlen($str), $buffer);
+    }
+
+    /**
      * @param array $matches
      *
      * @return string
@@ -194,21 +229,25 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         $this->reader = $reader;
     }
 
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return $this->reader->attributeCount;
     }
 
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->reader->value;
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->reader->name;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->valid = $this->reader->moveToNextAttribute();
@@ -217,11 +256,13 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         }
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->valid = $this->reader->moveToFirstAttribute();
     }
 
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->valid;
@@ -241,6 +282,7 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         return array_keys($this->getArrayCopy());
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         $attributes = $this->getArrayCopy();
@@ -248,6 +290,7 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         return isset($attributes[$offset]);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         $attributes = $this->getArrayCopy();
@@ -255,11 +298,13 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
         return $attributes[$offset];
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         throw new BadMethodCallException('XMLReader attributes are read-only');
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         throw new BadMethodCallException('XMLReader attributes are read-only');
@@ -270,7 +315,7 @@ class XMLAttributeIterator implements Iterator, Countable, ArrayAccess, XMLReade
      */
     public function getReader()
     {
-        return $this->getReader();
+        return $this->reader;
     }
 }
 
@@ -294,11 +339,16 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * stores the result of the last XMLReader::read() operation.
      *
-     * additionally it's set to true if not initialized (null) on @see XMLReaderIterator::rewind()
+     * additionally, it's set to true if not initialized (null) on @see XMLReaderIterator::rewind()
      *
      * @var bool
      */
     private $lastRead;
+
+    /**
+     * @var bool
+     */
+    private $skipNextRead;
 
     /**
      * @var array
@@ -313,6 +363,19 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     public function getReader()
     {
         return $this->reader;
+    }
+
+    /**
+     * skip the next read on next "next()"
+     *
+     * compare {@see XMLReaderIteration::skipNextRead()}
+     *
+     * @see XMLReaderIterator::next()
+     *
+     */
+    public function skipNextRead()
+    {
+        $this->skipNextRead = true;
     }
 
     public function moveToNextElementByName($name = null)
@@ -356,8 +419,11 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         return self::valid() ? self::current() : false;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
+        $this->skipNextRead = false;
+
         // this iterator can not really rewind
         if ($this->reader->nodeType === XMLREADER::NONE) {
             self::next();
@@ -370,6 +436,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * @return bool
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->lastRead;
@@ -378,27 +445,33 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     /**
      * @return XMLReaderNode
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return new XMLReaderNode($this->reader);
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->index;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
-        if ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
-            $depth                      = $this->reader->depth;
+        $this->index ++;
+
+        if ($this->skipNextRead) {
+            $this->skipNextRead = false;
+            $this->lastRead = $this->reader->nodeType !== XMLReader::NONE;
+        } elseif ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
+            $depth = $this->reader->depth;
             $this->elementStack[$depth] = new XMLReaderElement($this->reader);
             if (count($this->elementStack) !== $depth + 1) {
                 $this->elementStack = array_slice($this->elementStack, 0, $depth + 1);
             }
         }
-        ;
-        $this->index++;
     }
 
     /**
@@ -457,16 +530,17 @@ class XMLReaderIteration implements Iterator
      */
     private $skipNextRead;
 
-    function __construct(XMLReader $reader)
+    public function __construct(XMLReader $reader)
     {
         $this->reader = $reader;
     }
 
     /**
-     * skip the next read on next next()
+     * skip the next read on next "next()"
      *
-     * this is useful of the reader has moved to the next node already inside a foreach iteration and the next
-     * next would move the reader one off.
+     * this is useful of the reader has moved to the next node already inside a
+     * foreach iteration and the next "next()" would move the reader one too
+     * far.
      *
      * @see next
      */
@@ -478,11 +552,13 @@ class XMLReaderIteration implements Iterator
     /**
      * @return XMLReader
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->reader;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->index++;
@@ -495,16 +571,19 @@ class XMLReaderIteration implements Iterator
         }
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->index;
     }
 
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->valid;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         if ($this->reader->nodeType !== XMLReader::NONE) {
@@ -541,6 +620,7 @@ class XMLReaderNextIteration implements Iterator
         $this->localName = $localName;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         // XMLReader can not rewind, instead we move on if before the first node
@@ -549,21 +629,25 @@ class XMLReaderNextIteration implements Iterator
         $this->index = 0;
     }
 
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         return $this->valid;
     }
 
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->reader;
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->index;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->valid && $this->index++;
@@ -649,6 +733,7 @@ class DOMReadingIteration extends IteratorIterator
             && !$this->reader->isEmptyElement;
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         $this->stack = array($this->rootNode);
@@ -757,6 +842,7 @@ class DOMReadingIteration extends IteratorIterator
         return $uri;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         parent::next();
@@ -778,6 +864,9 @@ class DOMReadingIteration extends IteratorIterator
  * Class XMLWritingIteration
  *
  * @since 0.1.2
+ *
+ * @method XMLReader current()
+ * @mixin XMLReaderIteration
  */
 class XMLWritingIteration extends IteratorIterator
 {
@@ -799,10 +888,9 @@ class XMLWritingIteration extends IteratorIterator
     }
 
     public function write() {
-        $this->writeReaderImpl($this->writer, $this->reader);
-    }
+        $reader = $this->reader;
+        $writer = $this->writer;
 
-    private function writeReaderImpl(XMLWriter $writer, XMLReader $reader) {
         switch ($reader->nodeType) {
             case XMLReader::ELEMENT:
                 $writer->startElement($reader->name);
@@ -823,12 +911,17 @@ class XMLWritingIteration extends IteratorIterator
                 $writer->endElement();
                 break;
 
+            case XMLReader::CDATA:
+                $writer->writeCdata($reader->value);
+                break;
+
             case XMLReader::COMMENT:
                 $writer->writeComment($reader->value);
                 break;
 
             case XMLReader::SIGNIFICANT_WHITESPACE:
             case XMLReader::TEXT:
+            case XMLReader::WHITESPACE:
                 $writer->text($reader->value);
                 break;
 
@@ -837,7 +930,11 @@ class XMLWritingIteration extends IteratorIterator
                 break;
 
             default:
-                XMLReaderNode::dump($reader);
+                trigger_error(sprintf(
+                    '%s::write(): Node-type not implemented: %s',
+                    __CLASS__,
+                    XMLReaderNode::dump($reader, true)
+                ), E_USER_WARNING);
         }
     }
 }
@@ -877,7 +974,7 @@ class XMLReaderNode implements XMLReaderAggregate
      */
     private $attributes;
 
-    /** @var null|string  */
+    /** @var string  */
     private $string;
 
     public function __construct(XMLReader $reader)
@@ -899,26 +996,29 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * SimpleXMLElement for XMLReader::ELEMENT
      *
+     * @param string $className SimpleXMLElement class name of the simplexml element
      * @return SimpleXMLElement|null in case the current node can not be converted into a SimpleXMLElement
      * @since 0.1.4
      */
-    public function getSimpleXMLElement()
+    public function getSimpleXMLElement($className = null)
     {
         if (null === $this->simpleXML) {
             if ($this->reader->nodeType !== XMLReader::ELEMENT) {
                 return null;
             }
 
-            $node            = $this->expand();
-            $this->simpleXML = simplexml_import_dom($node);
+            $this->simpleXML = simplexml_import_dom($this->expand(), $className);
+        }
+
+        if (is_string($className) && !($this->simpleXML instanceof $className)) {
+            $this->simpleXML = simplexml_import_dom(dom_import_simplexml($this->simpleXML), $className);
         }
 
         return $this->simpleXML;
     }
 
     /**
-     * Alias of @see getSimpleXMLElement()
-     *
+     * @deprecated since v0.1.4, use {@see getSimpleXMLElement()} instead
      * @return null|SimpleXMLElement
      */
     public function asSimpleXML()
@@ -1023,26 +1123,29 @@ class XMLReaderNode implements XMLReaderAggregate
     /**
      * XMLReader expand node and import it into a DOMNode with a DOMDocument
      *
-     * This is for example useful for DOMDocument::saveXML() @see readOuterXml
-     * or getting a SimpleXMLElement out of it @see getSimpleXMLElement
+     * This is for example useful for DOMDocument::saveXML() {@see readOuterXml}
+     * or getting a SimpleXMLElement out of it {@see getSimpleXMLElement}
      *
+     * @param DOMNode $baseNode
      * @throws BadMethodCallException
-     * @param DOMNode $basenode
      * @return DOMNode
      */
-    public function expand(DOMNode $basenode = null)
+    public function expand(DOMNode $baseNode = null)
     {
-        if (null === $basenode) {
-            $basenode = new DomDocument();
+        if (null === $baseNode) {
+            $baseNode = new DomDocument();
         }
 
-        if ($basenode instanceof DOMDocument) {
-            $doc = $basenode;
+        if ($baseNode instanceof DOMDocument) {
+            $doc = $baseNode;
         } else {
-            $doc = $basenode->ownerDocument;
+            $doc = $baseNode->ownerDocument;
+            if (null === $doc) {
+                throw new InvalidArgumentException('BaseNode has no OwnerDocument.');
+            }
         }
 
-        if (false === $node = $this->reader->expand($basenode)) {
+        if (false === $node = $this->reader->expand($baseNode)) {
             throw new BadMethodCallException('Unable to expand node.');
         }
 
@@ -1078,7 +1181,7 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
-     * Return node-type as human readable string (constant name)
+     * Return node-type as human-readable string (constant name)
      *
      * @param null $nodeType
      *
@@ -1140,11 +1243,30 @@ class XMLReaderNode implements XMLReaderAggregate
     }
 
     /**
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
+    public function __set($name, $value)
+    {
+        throw new BadMethodCallException('XMLReader properties are read-only: ' . $name);
+    }
+
+    /**
+     * @param string $name
+     * @return bool
+     */
+    public function __isset($name)
+    {
+        return isset($this->reader->$name);
+    }
+
+    /**
      * debug utility method
      *
      * @param XMLReader $reader
      * @param bool $return (optional) prints by default but can return string
-     * @return string|null
+     * @return string|void
      */
     public static function dump(XMLReader $reader, $return = FALSE)
     {
@@ -1156,43 +1278,34 @@ class XMLReaderNode implements XMLReaderAggregate
         $extra = '';
 
         if ($reader->nodeType === XMLReader::ELEMENT) {
-            $extra = '<' . $reader->name . '> ';
-            $extra .= sprintf("(isEmptyElement: %s) ", $reader->isEmptyElement ? 'Yes' : 'No');
+            $extra = ' <' . $reader->name . '> ';
+            $extra .= sprintf("(isEmptyElement: %s)", $reader->isEmptyElement ? 'Yes' : 'No');
         }
 
         if ($reader->nodeType === XMLReader::END_ELEMENT) {
-            $extra = '</' . $reader->name . '> ';
+            $extra = ' </' . $reader->name . '>';
         }
 
         if ($reader->nodeType === XMLReader::ATTRIBUTE) {
-            $str = $reader->value;
-            $len = strlen($str);
-            if ($len > 20) {
-                $str = substr($str, 0, 17) . '...';
-            }
-            $str   = strtr($str, array("\n" => '\n'));
-            $extra = sprintf('%s = (%d) "%s" ', $reader->name, strlen($str), $str);
+            $extra = sprintf(' %s = %s', $reader->name, XMLBuild::dumpString($reader->value));
         }
 
-        if ($reader->nodeType === XMLReader::TEXT || $reader->nodeType === XMLReader::WHITESPACE || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE) {
-            $str = $reader->readString();
-            $len = strlen($str);
-            if ($len > 20) {
-                $str = substr($str, 0, 17) . '...';
-            }
-            $str   = strtr($str, array("\n" => '\n'));
-            $extra = sprintf('(%d) "%s" ', strlen($str), $str);
+
+        if ($reader->nodeType === XMLReader::CDATA
+            || $reader->nodeType === XMLReader::TEXT
+            || $reader->nodeType === XMLReader::WHITESPACE
+            || $reader->nodeType === XMLReader::SIGNIFICANT_WHITESPACE
+        ) {
+            $extra = sprintf( ' %s', XMLBuild::dumpString($reader->value));
         }
 
-        $label = sprintf("(#%d) %s %s", $nodeType, $nodeName, $extra);
+        $label = sprintf("(#%d) %s%s", $nodeType, $nodeName, $extra);
 
         if ($return) {
             return $label;
         }
 
         printf("%s%s\n", str_repeat('  ', $reader->depth), $label);
-
-        return null;
     }
 }
 
@@ -1520,6 +1633,9 @@ class XMLChildElementIterator extends XMLElementIterator
         return parent::current();
     }
 
+    /**
+     * @return int
+     */
     public function key()
     {
         return $this->index;
@@ -1579,6 +1695,7 @@ class XMLNodeTypeFilter extends XMLReaderFilterBase
         $this->invert  = $invert;
     }
 
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         $result = in_array($this->reader->nodeType, $this->allowed);
@@ -1643,6 +1760,7 @@ class XMLAttributeFilter extends XMLAttributeFilterBase
         $this->invert  = (bool) $invert;
     }
 
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         $result = $this->search($this->getAttributeValues(), $this->compare);
@@ -1683,13 +1801,14 @@ class XMLAttributePreg extends XMLAttributeFilterBase
     {
         parent::__construct($elements, $attr);
 
-        if (false === preg_match("$pattern", '')) {
+        if (false === preg_match((string)$pattern, '')) {
             throw new InvalidArgumentException("Invalid pcre pattern '$pattern'.");
         }
         $this->pattern = $pattern;
         $this->invert  = (bool) $invert;
     }
 
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         return (bool) preg_grep($this->pattern, $this->getAttributeValues(), $this->invert ? PREG_GREP_INVERT : 0);
@@ -1715,6 +1834,7 @@ class XMLElementXpathFilter extends XMLReaderFilterBase
         $this->expression = $expression;
     }
 
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         $buffer = $this->getInnerIterator()->getNodeTree();
@@ -1788,9 +1908,9 @@ final class BufferedFileRead
         }
 
         if ($context === null) {
-            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path);
+            $handle = fopen($filename, self::MODE_READ_BINARY, (bool)$use_include_path);
         } else {
-            $handle = fopen($filename, self::MODE_READ_BINARY, $use_include_path, $context);
+            $handle = fopen($filename, self::MODE_READ_BINARY, (bool)$use_include_path, $context);
         }
 
         if (!$handle) {
@@ -1813,7 +1933,7 @@ final class BufferedFileRead
      */
     public function append($count)
     {
-        $bufferLen = strlen($this->buffer);
+        $bufferLen = null === $this->buffer ? 0 : strlen($this->buffer);
 
         if ($bufferLen >= $count + $this->maxAhead) {
             return $bufferLen;
@@ -1825,7 +1945,7 @@ final class BufferedFileRead
 
         $read = fread($this->handle, $count);
         if ($read === false) {
-            throw new UnexpectedValueException(sprintf('Can not deal with fread() errors.'));
+            throw new UnexpectedValueException('Can not deal with fread() errors.');
         }
 
         if ($readLen = strlen($read)) {
@@ -2029,7 +2149,7 @@ class XMLSequenceStreamPath
         return $parts;
     }
 
-    function __toString() {
+    public function __toString() {
         return $this->path;
     }
 }
@@ -2183,7 +2303,7 @@ class XMLSequenceStream
         # fputs(STDOUT, sprintf('<read: %d - buffer: %d - eof: %d>', $count, strlen($reader->buffer), $this->flagEof));
 
         if ($this->flagEof) {
-            return false;
+            return '';
         }
 
         $bufferLen = $reader->append($count);
