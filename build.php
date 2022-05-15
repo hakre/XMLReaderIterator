@@ -32,9 +32,9 @@ function built_test_git_tag($version, &$errors)
 
     $command = "git tag --contains HEAD";
 
-    $target  = 'v' . $version;
+    $target = 'v' . $version;
     $tagName = exec($command, $output, $exitCode);
-    $result  = $tagName === $target;
+    $result = $tagName === $target;
 
     if (!$result) {
         printf("\nERROR: git tag '%s' does not match '%s'.\n", $tagName, $target);
@@ -63,11 +63,13 @@ build_make_clean($errors, $buildDir, $concatenateDir);
 build_create_concatenate_file($errors, $concatenateFile, $autoLoadFile, $readmeVersion);
 build_test_autoload_file($errors, $concatenateFile);
 copy_file_to_dir(__DIR__ . '/README.md', $concatenateDir);
+build_tree_uncommitted_changes($errors, __DIR__);
 
 ### conditional build target into gist ###
 $gistDir = __DIR__ . '/../' . basename(__DIR__) . '-Gist-5147685';
 if (is_dir($gistDir)) {
     copy_dir_to_dir($concatenateDir, $gistDir);
+    build_gist_commit($errors, $gistDir, $readmeVersion);
 } else {
     printf("INFO: Gist build target directory not found.\n");
 }
@@ -83,11 +85,11 @@ if ($errors) {
  */
 function built_test_readme_get_version(&$errors)
 {
-    $file    = 'README.md';
-    $data    = file($file);
-    $version =  null;
+    $file = 'README.md';
+    $data = file($file);
+    $version = null;
 
-    foreach ($data as $index => $line )  {
+    foreach ($data as $index => $line) {
         if ($line === "### Change Log:\n") {
             $version = preg_match('~`(\d\.\d+\.\d+)`~', $data[$index + 2], $m) ? $m[1] : null;
         }
@@ -124,8 +126,8 @@ function built_validate_version($version, &$errors)
  *
  * @param      $path
  * @param bool $assoc
- * @param int  $depth
- * @param int  $options
+ * @param int $depth
+ * @param int $options
  *
  * @return mixed
  */
@@ -224,13 +226,13 @@ function build_test_autoload_file(&$errors, $autoLoadFile)
     passthru($command, $exitCode);
 
     if (0 !== $exitCode) {
-        echo "ERROR: autoload file '", $autoLoadFile ,"' broken.\n";
+        echo "ERROR: autoload file '", $autoLoadFile, "' broken.\n";
         $errors++;
     }
 }
 
 /**
- * @param int    $errors
+ * @param int $errors
  * @param string $concatenateFile
  * @param string $autoLoadFile
  * @param string $version
@@ -257,7 +259,7 @@ function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile
 
     ### write concatenateFile based on autoload.php ###
     $pattern = '~^require .*\'/([^.]*\.php)\';$~';
-    $lines   = preg_grep($pattern, file($autoLoadFile));
+    $lines = preg_grep($pattern, file($autoLoadFile));
     if (!$lines) {
         echo "ERROR: Problem parsing file.\n";
     }
@@ -268,7 +270,7 @@ function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile
             echo "ERROR: Problem parsing file.\n";
             continue;
         }
-        $file   = sprintf('src/%s', $matches[1]);
+        $file = sprintf('src/%s', $matches[1]);
         $handle = fopen($file, 'r');
 
         if (!$handle) {
@@ -292,44 +294,35 @@ function build_create_concatenate_file(&$errors, $concatenateFile, $autoLoadFile
     }
     printf("INFO: concatenated %d files into %s.\n", $count, cwdname($concatenateFile));
 
-    ### change the part of line ###
-    do {
-
-        $buffer  = stream_get_contents($concatenateFileHandle, 512, 0);
-        $search  = ' * This file is part of the XMLReaderIterator package.';
-        $replace = ' * XMLReaderIterator <http://git.io/xmlreaderiterator>';
-
-        $length = strlen($search);
-
-        if ($length !== strlen($replace)) {
-            echo "ERROR: Search and replace must have the same length.\n";
-            $errors++;
-            break;
-        }
-
-        $pos = strpos($buffer, $search);
-        if (!$pos) {
-            echo "ERROR: Unable to find search string in first 512 bytes.\n";
-            $errors++;
-            break;
-        }
-
-        $buffer = substr_replace($buffer, $replace, $pos, $length);
-
-        $bytesWritten = stream_put_contents($concatenateFileHandle, $buffer, 0, $pos + $length);
-        if (false === $bytesWritten) {
-            echo "ERROR: Failed to put first 512 bytes into stream.\n";
-            $errors++;
-            break;
-        }
-
-    } while (false);
-
-    fclose($concatenateFileHandle);
-
     $buffer = file_get_contents($concatenateFile);
 
-    $search  = " * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>\n */";
+    $search = ' * This file is part of the XMLReaderIterator package.';
+    $replace = ' * XMLReaderIterator <https://github.com/hakre/XMLReaderIterator>';
+
+    $pos = strpos($buffer, $search);
+    if (!$pos) {
+        echo "ERROR: Unable to find search string in buffer.\n";
+        $errors++;
+        return;
+    }
+
+    $pos = strpos($buffer, $search);
+    if (!$pos) {
+        echo "ERROR: Unable to find search string in buffer.\n";
+        $errors++;
+        return;
+    }
+
+    $buffer = substr_replace($buffer, $replace, $pos, strlen($search));
+
+    if (!is_string($buffer)) {
+        echo "ERROR: Failed to replace in buffer.\n";
+        $errors++;
+        return;
+    }
+
+
+    $search = " * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>\n */";
     $replace = " * @license AGPL-3.0-or-later <https://spdx.org/licenses/AGPL-3.0-or-later>\n * @version $version\n */";
 
     $pos = strpos($buffer, $search);
@@ -375,6 +368,89 @@ function build_make_clean(&$errors, $buildDir, $concatenateDir)
     }
 }
 
+/**
+ * @param $errors
+ * @param $pathSpec
+ * @return bool|null on error
+ */
+function build_tree_uncommitted_changes(&$errors, $workDir, $pathSpec = '.')
+{
+    $command = sprintf('git -C %s status --porcelain -- %s', escapeshellarg($workDir), escapeshellarg($pathSpec));
+    exec($command, $output, $exitCode);
+
+    if (0 !== $exitCode) {
+        echo "ERROR: git execution in ", __FUNCTION__, "() non-zero exit status.\n";
+        $errors++;
+        return null;
+    }
+
+    $changes = !empty($output);
+    if ($changes) {
+        echo implode("\n", $output), "\n";
+        echo "ERROR: git uncommitted changes in '", $pathSpec, "'.\n";
+        $errors++;
+    }
+
+    return $changes;
+}
+
+/**
+ * @param $errors
+ * @param $gistDir
+ * @param $readmeVersion
+ */
+function build_gist_commit(&$errors, $gistDir, $readmeVersion)
+{
+    $command = sprintf('git -C %s log --format="%%B" -n 1 HEAD', escapeshellarg($gistDir));
+    exec($command, $output, $exitCode);
+
+    if (0 !== $exitCode) {
+        echo "ERROR: git execution in ", __FUNCTION__, "() non-zero exit status.\n";
+        $errors++;
+        return null;
+    }
+
+    if ('' === $readmeVersion) {
+        return;
+    }
+    $gistCurrentMessage = implode("\n", $output) . "\n";
+    $target = "Version $readmeVersion\n\n";
+    $needsAmending = $gistCurrentMessage === $target;
+
+    if (true === $unchanged = !rtrim(`git diff --quiet; echo $?`)) {
+        if (false === $needsAmending) {
+            echo "ERROR: gist has no changes but $readmeVersion not current.\n";
+            $errors++;
+        }
+        return;
+    }
+
+    $command = sprintf('git -C %s add README.md xmlreader-iterators.php', escapeshellarg($gistDir));
+    passthru($command, $exitCode);
+    if (0 !== $exitCode) {
+        echo "ERROR: gist command '$command' non-zero exit status.\n";
+        $errors++;
+        return null;
+    }
+
+    if ($needsAmending) {
+        $command = sprintf('git -C %s commit --amend -C HEAD', escapeshellarg($gistDir));
+    } else {
+        $command = sprintf('git -C %s commit -m %s', escapeshellarg($gistDir), escapeshellarg($target));
+    }
+
+    passthru($command, $exitCode);
+    if (0 !== $exitCode) {
+        printf("ERROR: gist command \"%s\" non-zero exit status.\n", addcslashes($command, "\0..\37\42\134\177..\377"));
+        $errors++;
+        return;
+    }
+
+    if (false === $unchanged = !rtrim(`git diff --quiet; echo $?`)) {
+        echo "ERROR: gist still has changes after commit.\n";
+        $errors++;
+    }
+}
 
 /**
  * @param $handle
@@ -411,7 +487,7 @@ function cwdname($path)
     isset($base) || $base = realpath('.');
 
     $baseLen = strlen($base);
-    if (substr($path, 0 , $baseLen) !== $base or !strpos(' ' . '\\/', $path[$baseLen])) {
+    if (substr($path, 0, $baseLen) !== $base or !strpos(' ' . '\\/', $path[$baseLen])) {
         echo "INFO: File '$path' not relative to cwd. Please verify.\n";
         $relative = realpath($path);
     } else {
@@ -479,11 +555,11 @@ function deltree($path)
         return;
     }
 
-    $stack      = array($path);
+    $stack = array($path);
     $rmdirStack = array();
     while ($stack) {
         $path = array_pop($stack);
-        $it   = new DirectoryIterator($path);
+        $it = new DirectoryIterator($path);
         foreach ($it as $file) {
             /* @var $file DirectoryIterator */
             if ($file->isDot()) {
@@ -524,10 +600,10 @@ function deltree($path)
 }
 
 /**
- * @param resource $handle    destination stream
- * @param string   $data      data to write
- * @param int      $offset    offset in destination stream if specified
- * @param int      $maxlength specify bytes to write if specified
+ * @param resource $handle destination stream
+ * @param string $data data to write
+ * @param int $offset offset in destination stream if specified
+ * @param int $maxlength specify bytes to write if specified
  *
  * @return bool|int
  * @internal param string $string string to write
@@ -543,7 +619,7 @@ function stream_put_contents($handle, $data, $offset = null, $maxlength = null)
 
     $length = strlen($data);
     if (null !== $maxlength) {
-        $length = max(0, (int) $maxlength);
+        $length = max(0, (int)$maxlength);
     }
 
     if (null !== $offset) {

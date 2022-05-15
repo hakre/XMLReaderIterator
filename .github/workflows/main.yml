@@ -3,9 +3,9 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, test, develop]
   pull_request:
-    branches: [master]
+    branches: [master, test, develop]
 
   workflow_dispatch:
 

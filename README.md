@@ -4,6 +4,8 @@
 
 ### Change Log:
 
+ - `0.1.12` maintenance release with fixes.
+
  - `0.1.11` maintenance release with fixes. added `XMLReader::CDATA` and
    `XMLReader::WHITESPACE` node support for `XMLWritingIteration`. added
    `XMLReaderItertor::skipNextRead()` for nested iterations.

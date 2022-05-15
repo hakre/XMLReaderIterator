@@ -1,0 +1,19 @@
+<response>
+    <foo />
+    <result>
+        <log>
+            <logs count="3">
+                <entry id="1">
+                    <baz>1</baz>
+                </entry>
+                <entry id="2">
+                    <baz>2</baz>
+                </entry>
+                <entry id="3">
+                    <baz>3</baz>
+                </entry>
+            </logs>
+        </log>
+    </result>
+    <bar />
+</response>

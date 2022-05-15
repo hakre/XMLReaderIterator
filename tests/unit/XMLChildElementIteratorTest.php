@@ -33,7 +33,7 @@ class XMLChildElementIteratorTest extends PHPUnit_Framework_TestCase
         $it = new XMLChildElementIterator($reader);
 
         $this->assertEquals(false, $it->valid());
-        $this->assertSame(null, $it->valid());
+        $this->assertSame(false, $it->valid());
 
         $it->rewind();
         $this->assertEquals(true, $it->valid());
@@ -92,5 +92,54 @@ class XMLChildElementIteratorTest extends PHPUnit_Framework_TestCase
         }
         $this->assertEquals(count($expected), $count);
 
+    }
+
+    /**
+     * The XMLChildElementIterator must not leave the parent element when iterating over named children
+     *
+     * There is a flaw that named children did indeed traverse (so are effectively also grand-children which could be
+     * considered a feature and not a bug) however also go over all siblings and so on the parent element level.
+     *
+     * Test at least that going into siblings is prevented. The cause was using the parent next() method while giving
+     * as well the parent XMLElementIterator the name and only in the XMLChildElementIterator do the check.
+     */
+    public function testInnerNamedChildren()
+    {
+        // first the good test, this must not break
+        $reader = new XMLReader();
+        $this->assertTrue($reader->open(__DIR__ . '/../../examples/data/posts.xml'), 'fixture document can be opened successfully');
+        // move to first _parent_ element
+        $iter = new XMLReaderIterator($reader);
+        $this->assertNotSame(false, $node = $iter->moveToNextElementByName('user'));
+        $children = $node->getChildElements();
+        $children->rewind();
+        $this->assertTrue($children->valid());
+        $array = iterator_to_array($children, false);
+        $this->assertCount(1, $array, 'count is correctly 1 here as there is one children');
+
+        // now the regression test which we're trying to break (so it's a fix)
+        $reader = new XMLReader();
+        $this->assertTrue($reader->open(__DIR__ . '/../../examples/data/posts.xml'), 'fixture document can be opened successfully');
+        $users = new XMLElementIterator($reader, 'user');
+        $users->rewind();
+        $user = $users->current();
+        $posts = $user->getChildElements('post');
+        $array = iterator_to_array($posts, false);
+        $this->assertCount(1, $array, 'this is the regression, count should be 1 but it is 16');
+    }
+
+    public function testDescendantChildren()
+    {
+        $reader = new XMLReader();
+        $this->assertTrue($reader->open(__DIR__ . '/../../examples/data/movies.xml'), 'fixture document can be opened successfully');
+        $children = new XMLChildElementIterator($reader, null, true);
+        $basePath = '/movies/movie';
+        foreach ($children as $index => $child) {
+            $nodePath = $children->getNodePath();
+            $this->assertStringStartsWith("$basePath/", "$nodePath/", "base-path check on child #$index");
+        }
+        $this->assertSame(13, $index, 'movies.xml document element has 14 child elements');
+        $array = iterator_to_array($children, false);
+        $this->assertSame(array(), $array, 'all children have been consumed by foreach');
     }
 }

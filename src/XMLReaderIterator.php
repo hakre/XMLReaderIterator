@@ -150,7 +150,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
     #[\ReturnTypeWillChange]
     public function current()
     {
-        return new XMLReaderNode($this->reader);
+        return $this->lastRead ? new XMLReaderNode($this->reader) : null;
     }
 
     #[\ReturnTypeWillChange]
@@ -168,11 +168,7 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
             $this->skipNextRead = false;
             $this->lastRead = $this->reader->nodeType !== XMLReader::NONE;
         } elseif ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
-            $depth = $this->reader->depth;
-            $this->elementStack[$depth] = new XMLReaderElement($this->reader);
-            if (count($this->elementStack) !== $depth + 1) {
-                $this->elementStack = array_slice($this->elementStack, 0, $depth + 1);
-            }
+            $this->touchElementStack();
         }
     }
 
@@ -201,4 +197,20 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         return $buffer;
     }
 
+    /**
+     * touch the internal element-stack
+     *
+     * update the element-stack for the current reader node - which must be
+     * of type XMLReader::ELEMENT otherwise undefined.
+     *
+     * @return void
+     */
+    protected function touchElementStack()
+    {
+        $depth = $this->reader->depth;
+        $this->elementStack[$depth] = new XMLReaderElement($this->reader);
+        if (count($this->elementStack) !== $depth + 1) {
+            $this->elementStack = array_slice($this->elementStack, 0, $depth + 1);
+        }
+    }
 }
