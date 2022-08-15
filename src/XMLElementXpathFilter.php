@@ -46,10 +46,10 @@ class XMLElementXpathFilter extends XMLReaderFilterBase
         $buffer = $this->getInnerIterator()->getNodeTree();
         $result = simplexml_load_string($buffer)->xpath($this->expression);
         $count  = count($result);
-        if ($count !== 1) {
+        if ($count < 1) {
             return false;
         }
 
-        return !($result[0]->children()->count());
+        return !($result[$count - 1]->children()->count());
     }
 }
