@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<catalog>
+    <product sku="empty_product"/>
+    <product sku="empty_attributes">
+        <attributes/>
+    </product>
+    <product sku="no_attributes">
+    </product>
+    <product sku="foo">
+        <attributes>
+            <name>Test product</name>
+        </attributes>
+        <variants>
+            <product sku="foo_blue">
+                <attributes>
+                    <name>Test product in blue</name>
+                    <price>15.00</price>
+                </attributes>
+            </product>
+            <product sku="foo_red">
+                <attributes>
+                    <name>Test product in red</name>
+                    <price>12.00</price>
+                </attributes>
+            </product>
+        </variants>
+    </product>
+    <product sku="bar">
+        <attributes>
+            <name>Simple test product</name>
+            <price>10.99</price>
+        </attributes>
+    </product>
+    <product sku="foobar">
+        <attributes>
+            <name>Another product</name>
+            <price>99.99</price>
+        </attributes>
+        <variants>
+            <product sku="foobar_l">
+                <attributes>
+                    <size>L</size>
+                </attributes>
+            </product>
+            <product sku="foobar_m">
+                <attributes>
+                    <size>M</size>
+                </attributes>
+            </product>
+        </variants>
+    </product>
+</catalog>

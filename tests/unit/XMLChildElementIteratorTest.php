@@ -91,7 +91,6 @@ class XMLChildElementIteratorTest extends PHPUnit_Framework_TestCase
             $this->assertEquals($expected[$index], $reader->name);
         }
         $this->assertEquals(count($expected), $count);
-
     }
 
     /**
@@ -141,5 +140,27 @@ class XMLChildElementIteratorTest extends PHPUnit_Framework_TestCase
         $this->assertSame(13, $index, 'movies.xml document element has 14 child elements');
         $array = iterator_to_array($children, false);
         $this->assertSame(array(), $array, 'all children have been consumed by foreach');
+    }
+
+    /**
+     * Test child-iterator without calling 'skipNextRead' method
+     */
+    public function testIterationOnChildrenStopBeforeReadingNextElement()
+    {
+        $reader = XMLReader::open(__DIR__ . '/../../examples/data/sample-rss-091.xml');
+        $this->assertTrue(!!$reader, 'fixture document can be opened successfully');
+        $items = new XMLElementIterator($reader, 'item');
+        foreach ($items as $idx => $item) {
+            $children = $items->getChildElements();
+            $children->rewind();
+            foreach (array('title', 'link', 'description') as $tagName) {
+                $this->assertTrue($children->valid());
+                $this->assertSame($tagName, $children->name);
+                $children->next();
+            }
+            $this->assertFalse($children->valid());
+        }
+        $this->assertSame(6, $idx, 'sample-rss-091.xml element has 7 item elements');
+        $this->assertEmpty(\iterator_to_array($items), 'all children have been consumed by foreach');
     }
 }

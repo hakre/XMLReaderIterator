@@ -1,0 +1,21 @@
+Found product "empty_product"
+Found product "empty_attributes"
+Found product "no_attributes"
+Found product "foo"
+  - name: Test product
+Found product "foo_blue"
+  - name: Test product in blue
+  - price: 15.00
+Found product "foo_red"
+  - name: Test product in red
+  - price: 12.00
+Found product "bar"
+  - name: Simple test product
+  - price: 10.99
+Found product "foobar"
+  - name: Another product
+  - price: 99.99
+Found product "foobar_l"
+  - size: L
+Found product "foobar_m"
+  - size: M
