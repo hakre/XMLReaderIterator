@@ -54,6 +54,11 @@ class XMLChildElementIterator extends XMLElementIterator
     private $name;
 
     /**
+     * @var int
+     */
+    private $innerDepth;
+
+    /**
      * @inheritdoc
      *
      * @param bool $descendantAxis traverse children of children
@@ -81,6 +86,11 @@ class XMLChildElementIterator extends XMLElementIterator
             !$this->moveToNextByNodeType(XMLReader::ELEMENT);
         }
 
+        // handles e.g. <parent/> -> no children available
+        if ($this->reader->isEmptyElement) {
+            return;
+        }
+
         if ($this->stopDepth === null) {
             $this->stopDepth = $this->reader->depth;
         }
@@ -89,6 +99,7 @@ class XMLChildElementIterator extends XMLElementIterator
         $result = $this->nextChildElementByName($this->name);
 
         $this->index = $result ? 0 : null;
+        $this->innerDepth = 1;
         $this->didRewind = true;
     }
 
@@ -137,6 +148,26 @@ class XMLChildElementIterator extends XMLElementIterator
     public function key()
     {
         return $this->index;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function readNext()
+    {
+        // update inner depth
+        if ($this->reader->nodeType === XMLReader::ELEMENT && !$this->reader->isEmptyElement) {
+            $this->innerDepth++;
+        } elseif ($this->reader->nodeType === XMLReader::END_ELEMENT) {
+            $this->innerDepth--;
+
+            // all children read? Exit to prevent reading next node
+            if ($this->innerDepth === 0) {
+                return false;
+            }
+        }
+
+        return parent::readNext();
     }
 
     /**

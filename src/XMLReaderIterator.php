@@ -167,9 +167,17 @@ class XMLReaderIterator implements Iterator, XMLReaderAggregate
         if ($this->skipNextRead) {
             $this->skipNextRead = false;
             $this->lastRead = $this->reader->nodeType !== XMLReader::NONE;
-        } elseif ($this->lastRead = $this->reader->read() and $this->reader->nodeType === XMLReader::ELEMENT) {
+        } elseif ($this->lastRead = $this->readNext() and $this->reader->nodeType === XMLReader::ELEMENT) {
             $this->touchElementStack();
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function readNext()
+    {
+        return $this->reader->read();
     }
 
     /**
