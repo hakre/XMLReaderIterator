@@ -100,7 +100,7 @@ abstract class XMLBuild
 
         // REC-xml/#AVNormalize - preserve
         // REC-xml/#sec-line-ends - preserve
-        $buffer = preg_replace_callback('~\r\n|\r(?!\n)|\t~', array('self', 'numericEntitiesSingleByte'), $buffer);
+        $buffer = preg_replace_callback('~\r\n|\r(?!\n)|\t~', array('XMLBuild', 'numericEntitiesSingleByte'), $buffer);
 
         return htmlspecialchars($buffer, ENT_QUOTES, 'UTF-8', false);
     }
